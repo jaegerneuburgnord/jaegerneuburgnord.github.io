@@ -1,0 +1,16 @@
+
+{
+  "name": "Wiesen KMZ-Karte",
+  "short_name": "WiesenKarte",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "https://leafletjs.com/docs/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
