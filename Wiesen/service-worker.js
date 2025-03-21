@@ -1,5 +1,5 @@
 
-const cacheName = 'wiesen-karte-cache';
+const cacheName = 'wiesen-karte-cache-v2';
 const filesToCache = [
   './',
   './index.html',
