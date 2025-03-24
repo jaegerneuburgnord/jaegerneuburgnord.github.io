@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="de">
 <head>
 <link href="./manifest.json" rel="manifest"/>
@@ -12,165 +11,236 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/dist/togeojson.umd.min.js"></script>
+<script src="main.js"></script>
 <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
-            font-family: Arial, sans-serif;
-        }
-        #map { 
-            width: 100%; 
-            height: 100vh; 
-        }
-        
-        .control-panel {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: white;
-            border-radius: 5px;
-            z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            max-height: 80vh;
-            overflow-y: auto;
-            width: 300px;
-            transition: all 0.3s ease;
-        }
-        
-        .control-header {
-            background: #4CAF50;
-            color: white;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            border-radius: 5px 5px 0 0;
-        }
-        
-        .control-header.collapsed {
-            border-radius: 5px;
-        }
-        
-        .control-content {
-            padding: 10px;
-            display: block;
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        
-        .control-content.collapsed {
-            display: none;
-        }
-        
-        .layer-section {
-            margin-bottom: 15px;
-        }
-        
-        .section-header {
-            background: #f0f0f0;
-            padding: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            border-radius: 3px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .layer-items {
-            padding-left: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .layer-items.collapsed {
-            display: none;
-        }
-        
-        .search-container {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            box-sizing: border-box;
-            margin-bottom: 5px;
-        }
-        
-        .search-results {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .search-result-item {
-            padding: 5px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .search-result-item:hover {
-            background-color: #f0f0f0;
-        }
-        
-        .button-container {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        
-        button {
-            padding: 8px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            flex: 1;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        .layer-item {
-            margin: 5px 0;
-        }
-        
-        label {
-            margin-left: 5px;
-        }
-    </style>
-</link><link href="./icon-192x192.png" rel="icon" type="image/png"/><link href="./icon-192x192.png" rel="apple-touch-icon"/></head>
+    body { 
+        margin: 0; 
+        padding: 0; 
+        font-family: Arial, sans-serif;
+    }
+    #map { 
+        width: 100%; 
+        height: 100vh; 
+    }
+    
+    .control-panel {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: white;
+        border-radius: 5px;
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        max-height: 80vh;
+        overflow-y: auto;
+        width: 300px;
+        transition: all 0.3s ease;
+    }
+    
+    .control-header {
+        background: #4CAF50;
+        color: white;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        border-radius: 5px 5px 0 0;
+    }
+    
+    .control-header.collapsed {
+        border-radius: 5px;
+    }
+    
+    .control-content {
+        padding: 10px;
+        display: block;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    .control-content.collapsed {
+        display: none;
+    }
+    
+    .layer-section {
+        margin-bottom: 15px;
+    }
+    
+    .section-header {
+        background: #f0f0f0;
+        padding: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        border-radius: 3px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .layer-items {
+        padding-left: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .layer-items.collapsed {
+        display: none;
+    }
+    
+    .search-container {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        box-sizing: border-box;
+        margin-bottom: 5px;
+    }
+    
+    .search-results {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .search-result-item {
+        padding: 5px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .search-result-item:hover {
+        background-color: #f0f0f0;
+    }
+    
+    .button-container {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+    
+    button {
+        padding: 8px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        flex: 1;
+    }
+    
+    button:hover {
+        background-color: #45a049;
+    }
+    
+    #location-button {
+        margin-top: 8px;
+        width: 100%;
+    }
+    
+    .layer-item {
+        margin: 5px 0;
+    }
+    
+    label {
+        margin-left: 5px;
+    }
+
+    /* Styling für die Update-Benachrichtigung */
+    .update-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        animation: slide-in 0.3s ease-out;
+    }
+    
+    @keyframes slide-in {
+        from { transform: translateY(100px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .update-message {
+        padding: 10px 15px;
+    }
+    
+    .update-message p {
+        margin: 0 0 10px 0;
+        font-weight: bold;
+    }
+    
+    #update-now {
+        background-color: white;
+        color: #4CAF50;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+    }
+    
+    #update-now:hover {
+        background-color: #f0f0f0;
+    }
+    
+    .user-marker {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 24px;
+        height: 24px;
+        background-color: #4285F4;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .accuracy-circle {
+        border-radius: 50%;
+        background-color: rgba(66, 133, 244, 0.2);
+        border: 1px solid rgba(66, 133, 244, 0.5);
+        box-sizing: border-box;
+    }
+</style>
+<link href="./icon-192x192.png" rel="icon" type="image/png"/>
+<link href="./icon-192x192.png" rel="apple-touch-icon"/>
+</head>
 <body>
 <div id="map"></div>
 <div class="control-panel">
-<div class="control-header">
-<span>Wiesen Neuburg Nord</span>
-<i class="fas fa-chevron-up toggle-icon"></i>
-</div>
-<div class="control-content">
-<div class="search-container">
-<input class="search-input" placeholder="Suche nach Name oder Beschreibung..." type="text"/>
-<div class="search-results"></div>
-</div>
-<div class="button-container">
-<button onclick="toggleAllLayers(true)">Alle anzeigen</button>
-<button onclick="toggleAllLayers(false)">Alle ausblenden</button>
-</div>
-<div class="layer-section">
-<div class="section-header">
-<span>Verfügbare Ebenen</span>
-<i class="fas fa-chevron-down"></i>
-</div>
-<div class="layer-items" id="layerCheckboxes"></div>
-</div>
-</div>
+    <div class="control-header">
+        <span>Wiesen Neuburg Nord</span>
+        <i class="fas fa-chevron-up toggle-icon"></i>
+    </div>
+    <div class="control-content">
+        <div class="search-container">
+            <input class="search-input" placeholder="Suche nach Name oder Beschreibung..." type="text"/>
+            <div class="search-results"></div>
+        </div>
+        <div class="button-container">
+            <button onclick="toggleAllLayers(true)">Alle anzeigen</button>
+            <button onclick="toggleAllLayers(false)">Alle ausblenden</button>
+            <button id="location-button" onclick="showCurrentLocation()"><i class="fas fa-map-marker-alt"></i> Standort anzeigen</button>
+        </div>
+        <div class="layer-section">
+            <div class="section-header">
+                <span>Verfügbare Ebenen</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="layer-items" id="layerCheckboxes"></div>
+        </div>
+    </div>
 </div>
 <script>
 const baseLayers = {
@@ -187,8 +257,6 @@ const map = L.map('map', {
 });
 
 L.control.layers(baseLayers).addTo(map);
-
-// Update mit Links
 
 const kmzData = {
   "Abspacher": "data:application/vnd.google-earth.kmz;base64,UEsDBBQACAgIAG9bdVoAAAAAAAAAAAAAAAAHAAAAZG9jLmttbNVVzY7TMBC+9ymicAFpG8duUifIzYoVQloJpApYcfYmbmrVtSPbpZQH4wX2xXCSpskuyQISFw6RPfN98+PxjEOuv+2F95Vpw5Vc+TAIfY/JXBVcliv/7vO7eeJfZzOycyzHlGblb62tXgNwPB4DVTFZchNIZoFjABQgP5t5Hnmr8sOeSVsLTpR0z7IvnBkmvYLX0RgBjbLFP9mTYB4vVn6lxGkewhinN3OIwnCO8VwqvafCb7mO/Z5L1lh0GqfLlVA622zS+xiHkIBW7vEjL+w2gwEioN12zsAv3sja5TDuPyqm/G+4EJnTN2uvVgcrnP8a6baXwE/CEDAUnq/Ilpdb4T77b4qS/E9F+UCrqbr01VhTPkxkx05Z20UE1PseMbXLOy2yF9OdR8CF1ec5CDAW7XJDfxdwYPZczHNZXCnO8lrQnO2p3l3YzXS9uTcVzbdMey+Pyq3S0pIF4uGHOcgykAf7nclXw0l0hgUzueaVde9Bdlsay6x19s3wEjAEZ39yopFz1Fdc9vZtQzB9ow6yoPp0a3rk3NdUf3TP0VDtAMuMYUJQ2zTSQHpMy5XS7jFzgHmMeB6EAcQojpL0KkoCjEO0SNOrcIwFE4w6VozSZJwVJgjGDWuZLhO4mPCF8TI6s1CaRuMstMAYdawITeT1m+zrkRw9fjvhT+vazOPYTbRzebk0Jw77jYD+uSf1fyCb/QRQSwcImDgPwRQCAABXBgAAUEsBAhQAFAAICAgAb1t1Wpg4D8EUAgAAVwYAAAcAAAAAAAAAAAAAAAAAAAAAAGRvYy5rbWxQSwUGAAAAAAEAAQA1AAAASQIAAAAA",
@@ -247,6 +315,12 @@ async function loadKMZ(name, url, prefixFilter=null) {
 
     layers[name] = geoLayer;
 }
+
+// Variablen für Standortanzeige
+let userMarker = null;
+let accuracyCircle = null;
+let watchId = null;
+let isLocating = false;
 
 async function init() {
     const container = document.getElementById('layerCheckboxes');
@@ -375,6 +449,117 @@ function setupCollapsiblePanels() {
             icon.classList.toggle('fa-chevron-up');
         });
     });
+}
+
+// Funktion zum Anzeigen des aktuellen Standorts
+function showCurrentLocation() {
+    const locationButton = document.getElementById('location-button');
+    
+    if (!isLocating) {
+        // Standort verfolgen starten
+        if ('geolocation' in navigator) {
+            locationButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Standort wird ermittelt...';
+            
+            watchId = navigator.geolocation.watchPosition(
+                updateLocation,
+                handleLocationError,
+                { 
+                    enableHighAccuracy: true, 
+                    maximumAge: 10000,  // 10 Sekunden
+                    timeout: 10000      // 10 Sekunden
+                }
+            );
+            isLocating = true;
+        } else {
+            alert('Geolocation wird von Ihrem Browser nicht unterstützt');
+        }
+    } else {
+        // Standortverfolgung beenden
+        stopLocationTracking();
+    }
+}
+
+// Standort auf der Karte aktualisieren
+function updateLocation(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const accuracy = position.coords.accuracy;
+    
+    // Marker entfernen, falls vorhanden
+    if (userMarker) {
+        map.removeLayer(userMarker);
+    }
+    if (accuracyCircle) {
+        map.removeLayer(accuracyCircle);
+    }
+    
+    // Genauigkeitskreis erstellen
+    accuracyCircle = L.circle([lat, lng], {
+        radius: accuracy,
+        className: 'accuracy-circle'
+    }).addTo(map);
+    
+    // Benutzerdefinierten Marker erstellen
+    const markerIcon = L.divIcon({
+        className: 'user-marker',
+        iconSize: [24, 24]
+    });
+    
+    userMarker = L.marker([lat, lng], {
+        icon: markerIcon,
+        zIndexOffset: 1000
+    }).addTo(map);
+    
+    // Karte auf Standort zentrieren (nur beim ersten Mal)
+    const locationButton = document.getElementById('location-button');
+    if (locationButton.innerHTML.includes('fa-spinner')) {
+        map.setView([lat, lng], 17);
+        locationButton.innerHTML = '<i class="fas fa-map-marker-alt"></i> Standort aktiv';
+    }
+}
+
+// Fehlerbehandlung für Geolocation
+function handleLocationError(error) {
+    let errorMessage;
+    
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            errorMessage = 'Standortzugriff verweigert';
+            break;
+        case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Standort ist nicht verfügbar';
+            break;
+        case error.TIMEOUT:
+            errorMessage = 'Zeitüberschreitung beim Abrufen des Standorts';
+            break;
+        case error.UNKNOWN_ERROR:
+            errorMessage = 'Ein unbekannter Fehler ist aufgetreten';
+            break;
+    }
+    
+    alert('Standortfehler: ' + errorMessage);
+    stopLocationTracking();
+}
+
+// Standortverfolgung beenden
+function stopLocationTracking() {
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+    
+    if (userMarker) {
+        map.removeLayer(userMarker);
+        userMarker = null;
+    }
+    
+    if (accuracyCircle) {
+        map.removeLayer(accuracyCircle);
+        accuracyCircle = null;
+    }
+    
+    isLocating = false;
+    document.getElementById('location-button').innerHTML = '<i class="fas fa-map-marker-alt"></i> Standort anzeigen';
 }
 
 init();
