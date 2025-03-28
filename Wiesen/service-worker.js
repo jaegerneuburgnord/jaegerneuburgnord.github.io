@@ -1,5 +1,5 @@
 // Ändere die Cache-Version, wenn du Updates bereitstellen möchtest
-const cacheName = 'wiesen-karte-cache-v11';
+const cacheName = 'wiesen-karte-cache-v12';
 const filesToCache = [
   './',
   './index.html',
