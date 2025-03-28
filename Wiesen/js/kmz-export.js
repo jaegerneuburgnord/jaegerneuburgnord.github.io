@@ -381,7 +381,7 @@ function getWhat3WordsAddress() {
             w3wInput.value = 'Wird ermittelt...';
         }
         
-        /*
+        
         // Da wir keinen API-Key haben, verwenden wir einen Dummy-Wert
         setTimeout(() => {
             const mockW3W = 'beispiel.demo.adresse';
@@ -394,7 +394,7 @@ function getWhat3WordsAddress() {
             // Beschreibungsfeld aktualisieren
             updateDescriptionWithW3W(mockW3W);
         }, 500);
-        */
+        /*
 
         // API-Key für What3Words
         const apiKey = 'IPAZBM3Y';
@@ -427,6 +427,7 @@ function getWhat3WordsAddress() {
                 }
                 updateDescriptionWithW3W(mockW3W);
             });
+        */
     } catch (error) {
         console.error("Fehler bei der What3Words-Verarbeitung:", error);
         const w3wInput = document.getElementById('w3w-address');

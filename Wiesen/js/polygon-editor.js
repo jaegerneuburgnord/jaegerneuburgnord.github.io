@@ -179,6 +179,25 @@ function saveEditedPolygon(doExport = false) {
                const bounds = polygonLayer.getBounds();
                const center = bounds.getCenter();
                
+               useMockWhat3Words = true
+               if (useMockWhat3Words) {
+                // Generate mock what3words address
+                const w3wUrl = `https://what3words.com/noch.nicht.implementiert`;
+                
+                if (updatedDescription) {
+                    updatedDescription += '\n\n';
+                }
+                updatedDescription += `What3Words: ${w3wUrl} (Mock)`;
+                
+                // What3Words-Feld aktualisieren
+                const w3wInput = document.getElementById('w3w-address');
+                if (w3wInput) {
+                    w3wInput.value = mockWords;
+                }
+                
+                // Feature speichern und exportieren
+                return completePolygonSave(newGeometry, name, updatedDescription, doExport);
+            } else {
                // API-Key für What3Words
                const apiKey = 'IPAZBM3Y';
                
@@ -215,6 +234,7 @@ function saveEditedPolygon(doExport = false) {
                        // Trotz Fehler das Feature speichern
                        return completePolygonSave(newGeometry, name, updatedDescription, doExport);
                    });
+                }
            } catch (error) {
                console.error("Fehler bei What3Words-Aktualisierung:", error);
            }
