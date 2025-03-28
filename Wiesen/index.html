@@ -326,34 +326,6 @@
 </div>
 <script>
 
-    function convertWhat3WordsToLinks(description) {
-        if (!description) return description;
-        
-        // Split the description into lines
-        const lines = description.includes('<br>') 
-            ? description.split('<br>') 
-            : [description];
-        
-        // Process each line
-        const processedLines = lines.map(line => {
-            // Check if the line contains a what3words URL
-            if (line.toLowerCase().includes('what3words.com')) {
-                // Find the URL using regex
-                const urlRegex = /(https?:\/\/(?:www\.)?what3words\.com\/[^\s<]+)/gi;
-                const matches = line.match(urlRegex);
-                
-                if (matches && matches.length > 0) {
-                    const url = matches[0];
-                    // Replace the URL with a clickable link
-                    return line.replace(url, `<a href="${url}" target="_blank">${url}</a>`);
-                }
-            }
-            return line;
-        });
-        
-        // Join the lines back together
-        return processedLines.join('<br>');
-    }
 
     function setupSearch() {
         const searchInput = document.querySelector('.search-input');
@@ -627,6 +599,36 @@ const kmzData = {
           
 const layers = {};
 const searchIndex = [];
+
+function convertWhat3WordsToLinks(description) {
+    if (!description) return description;
+    
+    // Split the description into lines
+    const lines = description.includes('<br>') 
+        ? description.split('<br>') 
+        : [description];
+    
+    // Process each line
+    const processedLines = lines.map(line => {
+        // Check if the line contains a what3words URL
+        if (line.toLowerCase().includes('what3words.com')) {
+            // Find the URL using regex
+            const urlRegex = /(https?:\/\/(?:www\.)?what3words\.com\/[^\s<]+)/gi;
+            const matches = line.match(urlRegex);
+            
+            if (matches && matches.length > 0) {
+                const url = matches[0];
+                // Replace the URL with a clickable link
+                return line.replace(url, `<a href="${url}" target="_blank">${url}</a>`);
+            }
+        }
+        return line;
+    });
+    
+    // Join the lines back together
+    return processedLines.join('<br>');
+}
+
 
 async function loadKMZ(name, url, prefixFilter=null) {
     const response = await fetch(url);
@@ -917,7 +919,7 @@ document.querySelector('.control-header').addEventListener('click', function() {
   
   // Layout beim Laden anpassen
   window.addEventListener('load', function() {
-    displayCacheVersion();
+    setTimeout(displayCacheVersion, 1000);
 
     if (window.innerWidth < 768) {
       // Schließe das Panel standardmäßig auf Mobilgeräten
