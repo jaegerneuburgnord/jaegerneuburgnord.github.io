@@ -7,6 +7,11 @@ let isEditingExistingPolygon = false;
 // Funktion zum Laden eines Polygons zur Bearbeitung
 function loadPolygonForEditing() {
     const select = document.getElementById('edit-polygon-select');
+    if (!select) {
+        console.error("Select-Element für Polygon-Auswahl nicht gefunden");
+        return;
+    }
+    
     const selectedOption = select.options[select.selectedIndex];
     
     if (!selectedOption || !selectedOption.value) {
@@ -15,7 +20,9 @@ function loadPolygonForEditing() {
     }
     
     // Sicherstellen, dass wir im Polygon-Tab sind
-    switchToTab('polygon-tab');
+    if (typeof switchToTab === 'function') {
+        switchToTab('polygon-tab');
+    }
     
     // Bisherige Polygon-Punkte löschen
     clearPolygonPoints();
@@ -73,18 +80,24 @@ function loadPolygonForEditing() {
                     
                     // Name und Beschreibung in die Felder setzen
                     if (sublayer.feature.properties) {
-                        document.getElementById('polygon-name').value = 
-                            sublayer.feature.properties.name || 'Bearbeitetes Polygon';
+                        const nameField = document.getElementById('polygon-name');
+                        if (nameField) {
+                            nameField.value = sublayer.feature.properties.name || 'Bearbeitetes Polygon';
+                        }
                         
-                        document.getElementById('polygon-description').value = 
-                            sublayer.feature.properties.description || '';
+                        const descField = document.getElementById('polygon-description');
+                        if (descField) {
+                            descField.value = sublayer.feature.properties.description || '';
+                        }
                     }
                     
                     // Original-Layer verstecken
                     map.removeLayer(sublayer);
                     
                     // Neues Polygon zeichnen
-                    finishPolygon();
+                    if (typeof finishPolygon === 'function') {
+                        finishPolygon();
+                    }
                     
                     // Info anzeigen
                     alert('Polygon wurde zum Bearbeiten geladen. Sie können die Punkte verschieben, hinzufügen oder löschen.');
@@ -99,7 +112,7 @@ function loadPolygonForEditing() {
 }
 
 // Funktion zum Speichern eines bearbeiteten Polygons
-function saveEditedPolygon() {
+function saveEditedPolygon(doExport = false) {
     if (!isEditingExistingPolygon || !originalPolygonFeature || !currentEditingLayerName) {
         return false; // Nichts zu speichern
     }
@@ -131,14 +144,97 @@ function saveEditedPolygon() {
         };
     }
     
+    // Name und Beschreibung abrufen
+    const nameField = document.getElementById('polygon-name');
+    const descField = document.getElementById('polygon-description');
+    
+    const name = nameField ? nameField.value : '';
+    const description = descField ? descField.value : '';
+    
+    // What3Words aktualisieren oder hinzufügen
+    let updatedDescription = description;
+    
+    // Wenn ein Export erwünscht ist, aktualisieren wir What3Words
+    if (doExport && polygonLayer) {
+        return updateWhat3WordsAndSave(newGeometry, name, updatedDescription);
+    } else {
+        // Sofort speichern ohne What3Words zu aktualisieren
+        return completePolygonSave(newGeometry, name, updatedDescription, doExport);
+    }
+}
+
+// Hilfsfunktion für das Aktualisieren von What3Words und anschließendes Speichern
+function updateWhat3WordsAndSave(newGeometry, name, description) {
+    // Mittelpunkt des Polygons berechnen für What3Words
+    const bounds = polygonLayer.getBounds();
+    const center = bounds.getCenter();
+    
+    // Versprechen, What3Words zu aktualisieren
+    return new Promise((resolve) => {
+        // Ältere What3Words-Einträge entfernen
+        const lines = description.split('\n');
+        const filteredLines = lines.filter(line => !line.toLowerCase().includes('what3words'));
+        let updatedDescription = filteredLines.join('\n');
+        
+        // Neuen What3Words-Link abrufen und hinzufügen
+        fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${center.lat},${center.lng}&language=de&format=json&key=YOUR_API_KEY`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.words) {
+                    const w3wUrl = `https://what3words.com/${data.words}`;
+                    
+                    // Zur Beschreibung hinzufügen
+                    if (updatedDescription) {
+                        updatedDescription += '\n\n';
+                    }
+                    updatedDescription += `What3Words: ${w3wUrl}`;
+                    
+                    // What3Words-Feld aktualisieren
+                    const w3wInput = document.getElementById('w3w-address');
+                    if (w3wInput) {
+                        w3wInput.value = data.words;
+                    }
+                }
+                
+                // Speichern mit aktualisierter Beschreibung
+                const success = completePolygonSave(newGeometry, name, updatedDescription, true);
+                resolve(success);
+            })
+            .catch(error => {
+                console.error('Fehler beim Aktualisieren von What3Words:', error);
+                
+                // Fallback für Demos ohne API-Key
+                const mockW3W = 'beispiel.demo.adresse';
+                
+                // Zur Beschreibung hinzufügen
+                if (updatedDescription) {
+                    updatedDescription += '\n\n';
+                }
+                updatedDescription += `What3Words: https://what3words.com/${mockW3W}`;
+                
+                // What3Words-Feld aktualisieren
+                const w3wInput = document.getElementById('w3w-address');
+                if (w3wInput) {
+                    w3wInput.value = mockW3W;
+                }
+                
+                // Speichern mit aktualisierter Beschreibung
+                const success = completePolygonSave(newGeometry, name, updatedDescription, true);
+                resolve(success);
+            });
+    });
+}
+
+// Hilfsfunktion, um das Speichern des Polygons abzuschließen
+function completePolygonSave(newGeometry, name, description, doExport) {
     // Neues Feature erstellen
     const newFeature = {
         ...originalPolygonFeature,
         geometry: newGeometry,
         properties: {
             ...originalPolygonFeature.properties,
-            name: document.getElementById('polygon-name').value || originalPolygonFeature.properties.name,
-            description: document.getElementById('polygon-description').value || originalPolygonFeature.properties.description
+            name: name || originalPolygonFeature.properties.name || 'Bearbeitetes Polygon',
+            description: description || originalPolygonFeature.properties.description || ''
         }
     };
     
@@ -160,7 +256,9 @@ function saveEditedPolygon() {
             onEachFeature: function(feature, layer) {
                 let popupText = feature.properties.name || 'Unbenannt';
                 if (feature.properties.description) {
-                    const processedDescription = convertWhat3WordsToLinks(feature.properties.description);
+                    const processedDescription = typeof convertWhat3WordsToLinks === 'function' 
+                        ? convertWhat3WordsToLinks(feature.properties.description)
+                        : feature.properties.description;
                     popupText += "<br>" + processedDescription;
                 }
                 layer.bindPopup(popupText);
@@ -179,6 +277,23 @@ function saveEditedPolygon() {
         // Zur Karte hinzufügen
         newLayer.addTo(map);
         layer.addLayer(newLayer);
+        
+        // Wenn Export gewünscht ist, exportieren
+        if (doExport) {
+            // Beschreibungsfeld im Modal aktualisieren
+            const descField = document.getElementById('polygon-description');
+            if (descField) {
+                descField.value = description;
+            }
+            
+            // Exportieren
+            if (typeof showEmailModal === 'function') {
+                // Dialog öffnen
+                showEmailModal();
+            } else {
+                console.error("Export-Funktion nicht gefunden");
+            }
+        }
         
         return true;
     }
@@ -204,6 +319,11 @@ function hideAllLayersExcept(exceptLayerName) {
 
 // Hilfsfunktion zum Hinzufügen eines Punktes an bestimmten Koordinaten
 function addPolygonPointAtCoords(coords) {
+    if (!coords || coords.length < 2) {
+        console.error("Ungültige Koordinaten zum Hinzufügen eines Punktes");
+        return;
+    }
+    
     const lat = coords[0];
     const lng = coords[1];
     
@@ -221,7 +341,9 @@ function addPolygonPointAtCoords(coords) {
         if (idx !== -1) {
             const newPos = this.getLatLng();
             polygonPoints[idx] = [newPos.lat, newPos.lng];
-            updatePolygonDisplay();
+            if (typeof updatePolygonDisplay === 'function') {
+                updatePolygonDisplay();
+            }
         }
     });
     
@@ -232,7 +354,9 @@ function addPolygonPointAtCoords(coords) {
             map.removeLayer(this);
             polygonMarkers.splice(idx, 1);
             polygonPoints.splice(idx, 1);
-            updatePolygonDisplay();
+            if (typeof updatePolygonDisplay === 'function') {
+                updatePolygonDisplay();
+            }
         }
     });
     
@@ -240,11 +364,18 @@ function addPolygonPointAtCoords(coords) {
     polygonMarkers.push(marker);
     
     // Polygon aktualisieren
-    updatePolygonDisplay();
+    if (typeof updatePolygonDisplay === 'function') {
+        updatePolygonDisplay();
+    }
     
     // Buttons aktivieren
-    document.getElementById('clear-polygon').disabled = false;
-    if (polygonPoints.length >= 3) {
-        document.getElementById('export-polygon').disabled = false;
+    const clearBtn = document.getElementById('clear-polygon');
+    if (clearBtn) {
+        clearBtn.disabled = false;
+    }
+    
+    const exportBtn = document.getElementById('export-polygon');
+    if (exportBtn && polygonPoints.length >= 3) {
+        exportBtn.disabled = false;
     }
 }
