@@ -221,9 +221,9 @@ function showEmailModal() {
         const headerElement = modal.querySelector('h3');
         if (headerElement) {
             if (typeof isEditingExistingPolygon !== 'undefined' && isEditingExistingPolygon) {
-                headerElement.textContent = 'Bearbeitetes Polygon exportieren';
+                headerElement.textContent = 'Bearbeitete Fläche exportieren';
             } else {
-                headerElement.textContent = 'KMZ per E-Mail versenden';
+                headerElement.textContent = 'Fläche per E-Mail versenden';
             }
         }
         
