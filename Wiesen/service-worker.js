@@ -1,7 +1,6 @@
 // Ändere die Cache-Version, wenn du Updates bereitstellen möchtest
-const CACHE_VERSION = 24;
+const CACHE_VERSION = 25;
 const CACHE_NAME = `wiesen-karte-cache-v${CACHE_VERSION}`;
-
 const filesToCache = [
   './',
   './index.html',
@@ -32,7 +31,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
   
   event.waitUntil(
-    caches.open(cacheName)
+    caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Cache wird gefüllt');
         return cache.addAll(filesToCache);
@@ -49,7 +48,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(thisCacheName => {
           // Lösche alte Caches, die nicht mehr benötigt werden
-          if (thisCacheName !== cacheName) {
+          if (thisCacheName !== CACHE_NAME) {
             console.log('Alter Cache wird gelöscht:', thisCacheName);
             return caches.delete(thisCacheName);
           }
@@ -78,15 +77,13 @@ self.addEventListener('fetch', event => {
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
-
           // Der Cache nimmt immer eine Kopie
           let responseToCache = response.clone();
           
-          caches.open(cacheName)
+          caches.open(CACHE_NAME)
             .then(cache => {
               cache.put(event.request, responseToCache);
             });
-
           return response;
         });
       })
