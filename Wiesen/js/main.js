@@ -36,7 +36,11 @@ async function init() {
     setupSearch();
     
     // Event Listener für auf- und zuklappbare Panels
-    setupCollapsiblePanels();
+    if (typeof setupCollapsiblePanels === 'function') {
+        setupCollapsiblePanels();
+    } else {
+        console.warn('setupCollapsiblePanels ist nicht definiert');
+    }
 }
 
 // Event-Listener für E-Mail-Modal-Fenster
@@ -79,6 +83,8 @@ window.addEventListener('load', function() {
     setTimeout(function() {
         if (typeof displayCacheVersion === 'function') {
             displayCacheVersion();
+        } else {
+            console.warn('displayCacheVersion ist nicht definiert');
         }
     }, 1000);
 
@@ -101,12 +107,16 @@ window.addEventListener('load', function() {
     });
 
     // Hover-Details für Polygon-Punkte
-    document.getElementById('polygon-points').addEventListener('mouseover', function(e) {
-        if (e.target && e.target.tagName === 'LI') {
-        const index = parseInt(e.target.dataset.index);
-        if (!isNaN(index) && index >= 0 && index < polygonMarkers.length) {
-            polygonMarkers[index].openPopup();
-        }
-        }
-    });
+    const polygonPointsElement = document.getElementById('polygon-points');
+    if (polygonPointsElement) {
+        polygonPointsElement.addEventListener('mouseover', function(e) {
+            if (e.target && e.target.tagName === 'LI') {
+                const index = parseInt(e.target.dataset.index);
+                if (!isNaN(index) && typeof polygonMarkers !== 'undefined' && 
+                    index >= 0 && index < polygonMarkers.length) {
+                    polygonMarkers[index].openPopup();
+                }
+            }
+        });
+    }
 });
