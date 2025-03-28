@@ -1,13 +1,25 @@
 // Ändere die Cache-Version, wenn du Updates bereitstellen möchtest
-const cacheName = 'wiesen-karte-cache-v19';
+const CACHE_VERSION = 20;
+const CACHE_NAME = `wiesen-karte-cache-v${CACHE_VERSION}`;
+
 const filesToCache = [
   './',
   './index.html',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
-  'https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/dist/togeojson.umd.min.js'
-  // Füge hier weitere Assets hinzu, die gecacht werden sollen
+  'https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/dist/togeojson.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css',
+  './styles.css',
+  './js/utils.js',
+  './js/map-config.js',
+  './js/search.js',
+  './js/location.js',
+  './js/polygon.js',
+  './js/kmz-export.js',
+  './js/main.js',
+  './manifest.json',
+  './icon-192x192.png'
 ];
 
 // Installation: Cache-Ressourcen speichern

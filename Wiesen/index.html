@@ -288,6 +288,84 @@
         opacity: 0.7;
         margin-left: 5px;
     }
+
+    /* Neue Polygonauswahl-Sektion */
+    .polygon-section {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-top: 1px solid #eee;
+        border-bottom: 1px solid #eee;
+        background-color: #f9f9f9;
+    }
+    
+    .polygon-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #polygon-points {
+        margin-top: 10px;
+        font-size: 0.9em;
+        color: #555;
+    }
+
+    /* Styles für E-Mail Dialog */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+
+.modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        border-radius: 5px;
+        width: 80%;
+        max-width: 500px;
+    }
+
+    .modal-content input, .modal-content textarea {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    .modal-content label {
+        font-weight: bold;
+        font-size: 0.9em;
+        color: #333;
+    }
+
+    .modal-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover {
+        color: black;
+    }
 </style>
 <link href="./icon-192x192.png" rel="icon" type="image/png"/>
 <link href="./icon-192x192.png" rel="apple-touch-icon"/>
@@ -315,6 +393,25 @@
             <button onclick="toggleAllLayers(false)">Alle ausblenden</button>
             <button id="location-button" onclick="showCurrentLocation()"><i class="fas fa-map-marker-alt"></i> Standort anzeigen</button>
         </div>
+
+        <!-- Neue Polygon-Auswahlsektion -->
+        <div class="polygon-section">
+            <div class="section-header">
+                <span>Polygon-Tool</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="layer-items">
+                <div class="polygon-buttons">
+                    <button id="start-polygon" onclick="startPolygonSelection()"><i class="fas fa-draw-polygon"></i> Polygon zeichnen</button>
+                    <button id="clear-polygon" onclick="clearPolygonPoints()" disabled><i class="fas fa-trash"></i> Löschen</button>
+                    <button id="export-polygon" onclick="preparePolygonExport()" disabled><i class="fas fa-file-export"></i> Als KMZ exportieren</button>
+                </div>
+                <div id="polygon-points">
+                    Keine Punkte ausgewählt
+                </div>
+            </div>
+        </div>
+
         <div class="layer-section">
             <div class="section-header">
                 <span>Verfügbare Ebenen</span>
@@ -324,6 +421,47 @@
         </div>
     </div>
 </div>
+
+<!-- Modal für Email -->
+<div id="email-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>KMZ per E-Mail versenden</h3>
+        <div>
+            <label for="polygon-name">Name des Polygons:</label>
+            <input type="text" id="polygon-name" placeholder="z.B. Wiese Neuburg" value="Neue Fläche">
+        </div>
+        <div>
+            <label for="polygon-description">Beschreibung:</label>
+            <textarea id="polygon-description" rows="3" placeholder="Beschreibung des Polygons"></textarea>
+        </div>
+        <div>
+            <label>What3Words-Adresse:</label>
+            <div id="w3w-container" style="display: flex; align-items: center; margin-bottom: 10px;">
+                <input type="text" id="w3w-address" readonly style="flex-grow: 1; margin-right: 5px;">
+                <button id="get-w3w" style="flex-shrink: 0;">Ermitteln</button>
+            </div>
+        </div>
+        <div>
+            <label for="email-to">Empfänger E-Mail:</label>
+            <input type="email" id="email-to" placeholder="beispiel@email.com">
+        </div>
+        <div>
+            <label for="email-subject">Betreff:</label>
+            <input type="text" id="email-subject" value="Polygon Export - Wiesen Neuburg Nord">
+        </div>
+        <div>
+            <label for="email-body">Nachricht:</label>
+            <textarea id="email-body" rows="3">Anbei finden Sie das exportierte Polygon aus der Wiesen Neuburg Nord Karte.</textarea>
+        </div>
+        <div class="modal-buttons">
+            <button id="download-kmz">Herunterladen</button>
+            <button id="cancel-email">Abbrechen</button>
+            <button id="send-email">Senden</button>
+        </div>
+    </div>
+</div>
+
 <script>
 
 
@@ -539,7 +677,6 @@ var wmsOverlay = L.tileLayer.wms(
 
 var bayerAtlasOverlay = L.tileLayer('https://intergeo{s}.bayernwolke.de/betty/c_g_atkishybrid_alkisinvers_parzellar/{z}/{x}/{y}', bayernAtlasServerOptions);
 
-
 const map = L.map('map', {
     center: [47.6, 13.2],
     zoom: 8,
@@ -583,7 +720,6 @@ const layerControl = L.control.layers(baseLayers, overlays, {
     }
 }).addTo(map);
 
-
 const kmzData = {
     "Abspacher": "data:application/vnd.google-earth.kmz;base64,UEsDBBQACAgIAG9bdVoAAAAAAAAAAAAAAAAHAAAAZG9jLmttbNVVzY7TMBC+9ymicAFpG8duUifIzYoVQloJpApYcfYmbmrVtSPbpZQH4wX2xXCSpskuyQISFw6RPfN98+PxjEOuv+2F95Vpw5Vc+TAIfY/JXBVcliv/7vO7eeJfZzOycyzHlGblb62tXgNwPB4DVTFZchNIZoFjABQgP5t5Hnmr8sOeSVsLTpR0z7IvnBkmvYLX0RgBjbLFP9mTYB4vVn6lxGkewhinN3OIwnCO8VwqvafCb7mO/Z5L1lh0GqfLlVA622zS+xiHkIBW7vEjL+w2gwEioN12zsAv3sja5TDuPyqm/G+4EJnTN2uvVgcrnP8a6baXwE/CEDAUnq/Ilpdb4T77b4qS/E9F+UCrqbr01VhTPkxkx05Z20UE1PseMbXLOy2yF9OdR8CF1ec5CDAW7XJDfxdwYPZczHNZXCnO8lrQnO2p3l3YzXS9uTcVzbdMey+Pyq3S0pIF4uGHOcgykAf7nclXw0l0hgUzueaVde9Bdlsay6x19s3wEjAEZ39yopFz1Fdc9vZtQzB9ow6yoPp0a3rk3NdUf3TP0VDtAMuMYUJQ2zTSQHpMy5XS7jFzgHmMeB6EAcQojpL0KkoCjEO0SNOrcIwFE4w6VozSZJwVJgjGDWuZLhO4mPCF8TI6s1CaRuMstMAYdawITeT1m+zrkRw9fjvhT+vazOPYTbRzebk0Jw77jYD+uSf1fyCb/QRQSwcImDgPwRQCAABXBgAAUEsBAhQAFAAICAgAb1t1Wpg4D8EUAgAAVwYAAAcAAAAAAAAAAAAAAAAAAAAAAGRvYy5rbWxQSwUGAAAAAAEAAQA1AAAASQIAAAAA",
     "Burger": "data:application/vnd.google-earth.kmz;base64,UEsDBBQACAgIAGFPeFoAAAAAAAAAAAAAAAAHAAAAZG9jLmttbN1W3W6bMBS+z1MwdttgbMzf5FCl7SZN6qRqa9WLqhcuuMGKY0eGjGXPszfZi80EEmgHWSdNk7aLKD7nfD6/3wHI6ZeVsD4zXXAlZzZ0XNtiMlUZl4uZfXP9bhrZp8mELA3KIGUxs/OyXL8BoKoqR62ZXPDCkawEBgGQg+xkYlnkQqWbFZNlLRhR0hVLbjkrmLQyXkdjBOyUjf1TuRXM4tnMXiuxnZ6dz+dzPIXIdadhOJVKr6iwG6xBX3LJdjf2GqNLlVA6eXykmNKHlIBG7uwVz8o8gQ4ioDnunYGfvJErk8Owf5yN+X/kQiSQgN1/p1abUhj/tWV/PAR+FoaAvnC8Izlf5ML8yj/TlOhfasoHuh7rS9eNK8r7iSzZNmlYREB97ixF7fJGi+T1OPMIOKC6PHsBhqIdJvR7AXvXjsVs22Ja0cpXgqZsRfXygN5t19lGL5i2YH/ZjC1jRar5ujQrn5BXd+cX8+v53eVGfpUG/DZdkged1Fte1Gue09KrlM4KJ1UrUKy/fytZ4ahcM+k8MC5pzu7vEwL6TicvKXagxHr6i+5+wxWmz9RGZlRv3xedpaU81R/Nk6qvNgaTYMGEoOWOYz3pKSxVpixTgAE8tVgWNE8KF7oojk5w5IQYx5EfnLiDKBj5uEF5sW8uDKIQwgi1vlwPwxFfcejFDcqHMPBHUNhDcJ9XjMIR1PHs620dLL9Z/ud93a3q0CSalT0MzYhPqfgLaqKXUPOWpbkZYVW/QI5wc6l5wZyK6aympqabNC//T2pC1zUMaYYbxFE0TBRo+OS3pAsC5A9TE0KIvD0qDEI8jEIQ42gfEY2ATLyw3YXQx95YQBzANqDZGTcYSf54iX+HvwR0XzKk/sRJJj8AUEsHCPh8Z7WTAgAAMgkAAFBLAQIUABQACAgIAGFPeFr4fGe1kwIAADIJAAAHAAAAAAAAAAAAAAAAAAAAAABkb2Mua21sUEsFBgAAAAABAAEANQAAAMgCAAAAAA==",
@@ -600,341 +736,174 @@ const kmzData = {
     "Schweller": "data:application/vnd.google-earth.kmz;base64,UEsDBBQACAgIAExcdVoAAAAAAAAAAAAAAAAHAAAAZG9jLmttbO1WTW+cMBC951dQ2kMrZTE2NpjKS5Q0ilSplaImUQ/RHih4FxSvvTJsN/vva74WkoUkqnrsAeGZeX4zPM2MYGePa2H95rrIlZzb0HFti8tEpblcze2726sZtc+iE/ZgUAYpi7mdleXmMwC73c5RGy5XeeFIXgKDAMhBdnRiWexSJds1l2VlGFPGax79zHnBpZXmVTbOQO1s4jflXnArT+f2Ron9LAgJwXQGkevOgmAmVcqLxLz0OhZ2c8Vc+pZLXl/sPMaXKKF0tFxiSkgQMtDYfXyXp2UWQQcx0Bw7MnDExq5NKeP8OJ3iX+ZCRJCB+t271bYUhr+KdMdD4qM07CIWQin5PHfJH8uIvbv/cnl+e37PMi/6cF9puGDAnBeLiIEacmA+5mFgaLxJ9SxfZcI85b8Rnv4XvhX+e7x5Rfte8es4H37sA99HzTQwUJ37SFEx32kRvX91kBg4gHtJBnnGkh6a4a/yDm6/lLrVyujT2tciTvg61g8HdL06bpJsx4Xg2vq4jDO90dxsIh1vzU5ylrH+la948Wm4Zt5Y50h1VauslHzaWFxfqK1MY73/WvSRdj5i/cNs0KG7bqSiMBXHZd2QA+spLFFKm/1rAsXTiGVBs7qQ64feKaZOQEJI/VN3FOPiDkQJRngC5cMgbFEQETiOgoTAlivAxEMTXKaYFuWHLiUTXBB7fovyqSlxnItSH7YojGEwwRW4kLQoSCidQIUk7Kg8PCEXQiHsygq8qYSIkJB2KILCcZTneyhoRXWxOyGX56EuI4XYnxACBRihFuXBqeJdQjoqguBEQuhB0nVEYJ6pjniht6q1O9qazRZ/3vP1zh2bkmb3HgbKmMMJZ6D/e2DVb0V08gdQSwcIiG1qh4wCAACmCAAAUEsBAhQAFAAICAgATFx1WohtaoeMAgAApggAAAcAAAAAAAAAAAAAAAAAAAAAAGRvYy5rbWxQSwUGAAAAAAEAAQA1AAAAwQIAAAAA",
     "unbekannt": "data:application/vnd.google-earth.kmz;base64,UEsDBBQACAgIADpSeFoAAAAAAAAAAAAAAAAHAAAAZG9jLmttbNWVX2+bMBDA3/MpPPbaYBwgJJPjql01bdMmRVv7VPWBgBO8GDsC0yzffsefAO0g2qS9DETi8/18Z+7OB73+mUr0zLNcaLWyiO1YiKtIx0LtVtbD/YfpwrpmE7oHCkiVr6zEmMM7jI/Ho60PXO1EbituMBB4Zs8sNkGI3umoSLkypQCiClPOCrXh+1ApQ3El16rv5iQ5EvHKOmh5mjrVNSUz+AmCqdJZGkqrZoH+IhSvVpxnYC7SUmdsu62XUlzLnf4oYpMwYs8orodnY/g3a3QNexi278Vj9rdCSkYorv67aV0YCfZLzXnYOn7lhuK+cDkiidglEh7zb4Ky+J+C8jU8jMWli8Y6FP2N7PmJ1VVEcTnuNHlp8iGT7O145VHcUt0+ew6GvLUZ+juHvWWXfDZhgVA08lqGEU/DbN/S9WkbOGygi3keZeJg4LQz+ubx/d3N/c3jzQZ9LqRAH3lBNxmDbpCWyYkS9KwV+gHWVcwVCosc3fJsl3CRPj0xivvGJn/ykgOvVmZ9162va4Rnt7pQcZidPuWdpin1MPsGzak/DQrD85xLGZqqtnrSSyzSOoPWBor8pQYhAh3Ccb3Ad6+8hR14vktc/8oZpAIyD2rKm/lLb5jySLBYNpTruqMU3A0FHBmh5s7s7NEnjjtGzUlLBe5ylApIQwW+N7Yvb+E1tny4g5FIXI5X2RcGA163mdeZrJrCUO7r5tCWCYj9oqe4+9zQ8jvEJr8AUEsHCMpZNusqAgAA1wYAAFBLAQIUABQACAgIADpSeFrKWTbrKgIAANcGAAAHAAAAAAAAAAAAAAAAAAAAAABkb2Mua21sUEsFBgAAAAABAAEANQAAAF8CAAAAAA=="
   };
-          
-const layers = {};
-const searchIndex = [];
 
-function convertWhat3WordsToLinks(description) {
-    if (!description) return description;
-    
-    // Split the description into lines
-    const lines = description.includes('<br>') 
-        ? description.split('<br>') 
-        : [description];
-    
-    // Process each line
-    const processedLines = lines.map(line => {
-        // Check if the line contains a what3words URL
-        if (line.toLowerCase().includes('what3words.com')) {
-            // Find the URL using regex
-            const urlRegex = /(https?:\/\/(?:www\.)?what3words\.com\/[^\s<]+)/gi;
-            const matches = line.match(urlRegex);
-            
-            if (matches && matches.length > 0) {
-                const url = matches[0];
-                // Replace the URL with a clickable link
-                return line.replace(url, `<a href="${url}" target="_blank">${url}</a>`);
-            }
-        }
-        return line;
-    });
-    
-    // Join the lines back together
-    return processedLines.join('<br>');
-}
+// Variablen für Polygon-Zeichnung
+let drawingMode = false;
+let polygonPoints = [];
+let polygonMarkers = [];
+let polygonLayer = null;
+let tempPolygon = null;
 
-
-async function loadKMZ(name, url, prefixFilter=null) {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const zip = await JSZip.loadAsync(blob);
-    const kmlFile = zip.file(/\.kml$/i)[0];
-    const kmlText = await kmlFile.async('text');
-    const parser = new DOMParser();
-    const kml = parser.parseFromString(kmlText, 'text/xml');
-    const geojson = toGeoJSON.kml(kml);
-
-    const geoLayer = L.geoJSON(geojson, {
-        filter: function(feature) {
-            if (prefixFilter) {
-                return feature.properties.name.startsWith(prefixFilter);
-            }
-            return true;
-        },
-        onEachFeature: function(feature, layer) {
-            let popupText = feature.properties.name || 'Unbenannt';
-            if (feature.properties.description) {
-                // Convert What3Words URLs to clickable links
-                const processedDescription = convertWhat3WordsToLinks(feature.properties.description);
-                popupText += "<br>" + processedDescription;
-            }
-            layer.bindPopup(popupText);
-            
-            // Index für die Suche (keep the original description for search indexing)
-            const searchItem = {
-                name: feature.properties.name || 'Unbenannt',
-                description: feature.properties.description || '',
-                layer: layer,
-                parentLayer: name
-            };
-            searchIndex.push(searchItem);
-        }
-    });
-
-    layers[name] = geoLayer;
-}
-
-// Variablen für Standortanzeige
-let userMarker = null;
-let accuracyCircle = null;
-let watchId = null;
-let isLocating = false;
-
-async function init() {
-    const container = document.getElementById('layerCheckboxes');
-
-    for (const name in kmzData) {
-        const prefixMatch = name.match(/Wiesen Diverse - (\w+)/);
-        const prefixFilter = prefixMatch ? prefixMatch[1] : null;
-
-        await loadKMZ(name, kmzData[name], prefixFilter);
-        
-        const layerItem = document.createElement('div');
-        layerItem.className = 'layer-item';
-        
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = name;
-        checkbox.onchange = function() {
-            if (this.checked) {
-                layers[name].addTo(map);
-                map.fitBounds(layers[name].getBounds());
-            } else {
-                layers[name].removeFrom(map);
-            }
-        };
-        
-        const label = document.createElement('label');
-        label.htmlFor = name;
-        label.innerHTML = name;
-        
-        layerItem.appendChild(checkbox);
-        layerItem.appendChild(label);
-        container.appendChild(layerItem);
+// Funktionen für Polygon-Zeichnung
+function startPolygonSelection() {
+    if (drawingMode) {
+        stopPolygonSelection();
+        return;
     }
     
-    // Event Listener für Suchfunktion
-    setupSearch();
+    drawingMode = true;
+    document.getElementById('start-polygon').innerHTML = '<i class="fas fa-times"></i> Zeichnen beenden';
+    document.getElementById('start-polygon').style.backgroundColor = '#f44336';
     
-    // Event Listener für auf- und zuklappbare Panels
-    setupCollapsiblePanels();
+    // Bayern Atlas Overlay aktivieren
+    bayerAtlasOverlay.addTo(map);
+    const bayernAtlasCheckbox = document.querySelector('input[type="checkbox"][name="' + L.Util.stamp(bayerAtlasOverlay) + '"]');
+    if (bayernAtlasCheckbox) {
+        bayernAtlasCheckbox.checked = true;
+    }
+    
+    // Klick-Event hinzufügen
+    map.on('click', addPolygonPoint);
+    
+    // Info anzeigen
+    alert('Klicken Sie auf die Karte, um Punkte für Ihr Polygon zu setzen. Beenden Sie den Zeichenmodus mit einem erneuten Klick auf den Button.');
 }
 
-function toggleAllLayers(show) {
-    const group = [];
-    for (const name in layers) {
-        const checkbox = document.getElementById(name);
-        checkbox.checked = show;
-        if (show) {
-            layers[name].addTo(map);
-            group.push(layers[name]);
-        } else {
-            layers[name].removeFrom(map);
-        }
-    }
-    if (show && group.length > 0) {
-        const groupLayer = L.featureGroup(group);
-        map.fitBounds(groupLayer.getBounds());
+function stopPolygonSelection() {
+    drawingMode = false;
+    document.getElementById('start-polygon').innerHTML = '<i class="fas fa-draw-polygon"></i> Polygon zeichnen';
+    document.getElementById('start-polygon').style.backgroundColor = '#4CAF50';
+    
+    map.off('click', addPolygonPoint);
+    
+    if (polygonPoints.length >= 3) {
+        // Ein geschlossenes Polygon erstellen
+        finishPolygon();
     }
 }
 
-
-function setupCollapsiblePanels() {
-    // Hauptkontrollpanel
-    const controlHeader = document.querySelector('.control-header');
-    const controlContent = document.querySelector('.control-content');
-    const toggleIcon = document.querySelector('.toggle-icon');
+function finishPolygon() {
+    // Falls ein temporäres Polygon existiert, entfernen
+    if (tempPolygon) {
+        map.removeLayer(tempPolygon);
+        tempPolygon = null;
+    }
     
-    controlHeader.addEventListener('click', function() {
-        controlContent.classList.toggle('collapsed');
-        toggleIcon.classList.toggle('fa-chevron-up');
-        toggleIcon.classList.toggle('fa-chevron-down');
-        controlHeader.classList.toggle('collapsed');
-    });
+    // Falls bereits ein Polygon-Layer existiert, entfernen
+    if (polygonLayer) {
+        map.removeLayer(polygonLayer);
+    }
     
-    // Layer-Sektion
-    const sectionHeaders = document.querySelectorAll('.section-header');
+    // Ein neues geschlossenes Polygon erstellen (erster und letzter Punkt identisch)
+    let closedPoints = [...polygonPoints];
+    if (closedPoints.length >= 3 && 
+        (closedPoints[0][0] !== closedPoints[closedPoints.length-1][0] || 
+         closedPoints[0][1] !== closedPoints[closedPoints.length-1][1])) {
+        closedPoints.push([...closedPoints[0]]);
+    }
     
-    sectionHeaders.forEach(header => {
-        const icon = header.querySelector('i');
-        const content = header.nextElementSibling;
-        
-        header.addEventListener('click', function() {
-            content.classList.toggle('collapsed');
-            icon.classList.toggle('fa-chevron-down');
-            icon.classList.toggle('fa-chevron-up');
-        });
-    });
+    // Polygon-Layer erstellen und zur Karte hinzufügen
+    polygonLayer = L.polygon(closedPoints, {
+        color: '#FF0000',
+        weight: 3,
+        opacity: 0.8,
+        fillColor: '#FF0000',
+        fillOpacity: 0.2
+    }).addTo(map);
+    
+    // Polygon-Fläche berechnen und anzeigen
+    const area = calculatePolygonArea(closedPoints);
+    const areaText = `${(area / 10000).toFixed(2)} Hektar (${area.toFixed(0)} m²)`;
+    
+    // Popup mit zusätzlichen Infos anzeigen
+    const popupContent = `
+        <div style="min-width: 200px;">
+            <h4>Polygonfläche</h4>
+            <p>${areaText}</p>
+            <button onclick="preparePolygonExport()" style="width: 100%; padding: 5px; margin-top: 5px; cursor: pointer;">
+                Als KMZ exportieren
+            </button>
+        </div>
+    `;
+    polygonLayer.bindPopup(popupContent);
+    polygonLayer.openPopup();
+    
+    // Auf das Polygon zoomen
+    map.fitBounds(polygonLayer.getBounds());
 }
 
-// Funktion zum Anzeigen des aktuellen Standorts
-function showCurrentLocation() {
-    const locationButton = document.getElementById('location-button');
+function addPolygonPoint(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
     
-    if (!isLocating) {
-        // Standort verfolgen starten
-        if ('geolocation' in navigator) {
-            locationButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Standort wird ermittelt...';
-            
-            watchId = navigator.geolocation.watchPosition(
-                updateLocation,
-                handleLocationError,
-                { 
-                    enableHighAccuracy: true, 
-                    maximumAge: 10000,  // 10 Sekunden
-                    timeout: 10000      // 10 Sekunden
-                }
-            );
-            isLocating = true;
-        } else {
-            alert('Geolocation wird von Ihrem Browser nicht unterstützt');
+    // Punkt zum Array hinzufügen
+    polygonPoints.push([lat, lng]);
+    
+    // Marker erstellen
+    const marker = L.marker([lat, lng], {
+        draggable: true
+    }).addTo(map);
+    
+    // Event für Marker-Drag
+    marker.on('dragend', function(e) {
+        const idx = polygonMarkers.indexOf(this);
+        if (idx !== -1) {
+            const newPos = this.getLatLng();
+            polygonPoints[idx] = [newPos.lat, newPos.lng];
+            updatePolygonDisplay();
         }
+    });
+    
+    // Event für Marker-Klick (zum Entfernen)
+    marker.on('contextmenu', function(e) {
+        const idx = polygonMarkers.indexOf(this);
+        if (idx !== -1) {
+            map.removeLayer(this);
+            polygonMarkers.splice(idx, 1);
+            polygonPoints.splice(idx, 1);
+            updatePolygonDisplay();
+        }
+    });
+    
+    // Marker zum Array hinzufügen
+    polygonMarkers.push(marker);
+    
+    updatePolygonDisplay();
+    
+    // Buttons aktivieren
+    document.getElementById('clear-polygon').disabled = false;
+    if (polygonPoints.length >= 3) {
+        document.getElementById('export-polygon').disabled = false;
+    }
+}
+
+function updatePolygonDisplay() {
+    // Text-Anzeige aktualisieren
+    const pointsElement = document.getElementById('polygon-points');
+    if (polygonPoints.length === 0) {
+        pointsElement.textContent = 'Keine Punkte ausgewählt';
     } else {
-        // Standortverfolgung beenden
-        stopLocationTracking();
+        pointsElement.innerHTML = `<strong>${polygonPoints.length} Punkte:</strong><br>` + 
+            polygonPoints.map((point, idx) => 
+                `${idx+1}: [${point[0].toFixed(6)}, ${point[1].toFixed(6)}]`
+            ).join('<br>');
     }
+    
+    // Temporäres Polygon aktualisieren
+    if (tempPolygon) {
+        map.removeLayer(tempPolygon);
+    }
+    
+    if (polygonPoints.length >= 2) {
+        tempPolygon = L.polyline(polygonPoints, {
+            color: '#FF0000',
+            weight: 2,
+            opacity: 0.7,
+            dashArray: '5, 10'
+        }).addTo(map);
+    }
+    
+    // Buttons aktualisieren
+    document.getElementById('export-polygon').disabled = polygonPoints.length < 3;
+    document.getElementById('clear-polygon').disabled = polygonPoints.length === 0;
 }
-
-// Standort auf der Karte aktualisieren
-function updateLocation(position) {
-    const lat = position.coords.latitude;
-    const lng = position.coords.longitude;
-    const accuracy = position.coords.accuracy;
-    
-    // Marker entfernen, falls vorhanden
-    if (userMarker) {
-        map.removeLayer(userMarker);
-    }
-    if (accuracyCircle) {
-        map.removeLayer(accuracyCircle);
-    }
-    
-    // Genauigkeitskreis erstellen
-    accuracyCircle = L.circle([lat, lng], {
-        radius: accuracy,
-        className: 'accuracy-circle'
-    }).addTo(map);
-    
-    // Benutzerdefinierten Marker erstellen
-    const markerIcon = L.divIcon({
-        className: 'user-marker',
-        iconSize: [24, 24]
-    });
-    
-    userMarker = L.marker([lat, lng], {
-        icon: markerIcon,
-        zIndexOffset: 1000
-    }).addTo(map);
-    
-    // Karte auf Standort zentrieren (nur beim ersten Mal)
-    const locationButton = document.getElementById('location-button');
-    if (locationButton.innerHTML.includes('fa-spinner')) {
-        map.setView([lat, lng], 17);
-        locationButton.innerHTML = '<i class="fas fa-map-marker-alt"></i> Standort aktiv';
-    }
-}
-
-// Fehlerbehandlung für Geolocation
-function handleLocationError(error) {
-    let errorMessage;
-    
-    switch(error.code) {
-        case error.PERMISSION_DENIED:
-            errorMessage = 'Standortzugriff verweigert';
-            break;
-        case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Standort ist nicht verfügbar';
-            break;
-        case error.TIMEOUT:
-            errorMessage = 'Zeitüberschreitung beim Abrufen des Standorts';
-            break;
-        case error.UNKNOWN_ERROR:
-            errorMessage = 'Ein unbekannter Fehler ist aufgetreten';
-            break;
-    }
-    
-    alert('Standortfehler: ' + errorMessage);
-    stopLocationTracking();
-}
-
-// Standortverfolgung beenden
-function stopLocationTracking() {
-    if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-    }
-    
-    if (userMarker) {
-        map.removeLayer(userMarker);
-        userMarker = null;
-    }
-    
-    if (accuracyCircle) {
-        map.removeLayer(accuracyCircle);
-        accuracyCircle = null;
-    }
-    
-    isLocating = false;
-    document.getElementById('location-button').innerHTML = '<i class="fas fa-map-marker-alt"></i> Standort anzeigen';
-}
-// Funktion zum Extrahieren und Anzeigen der Cache-Version
-async function displayCacheVersion() {
-    // Überprüfen, ob Caches API verfügbar ist
-    if ('caches' in window) {
-        try {
-            // Alle verfügbaren Caches abrufen
-            const cacheNames = await caches.keys();
-            
-            // Nach dem Wiesen-Karte-Cache suchen
-            const wiesenCaches = cacheNames.filter(name => name.startsWith('wiesen-karte-cache'));
-            
-            if (wiesenCaches.length > 0) {
-                // Den neuesten Cache nehmen (falls mehrere existieren)
-                const latestCache = wiesenCaches.sort().pop();
-                
-                // Versionsnummer extrahieren mit einem regulären Ausdruck
-                const versionMatch = latestCache.match(/wiesen-karte-cache-v(\d+)/);
-                
-                if (versionMatch && versionMatch[1]) {
-                    // Versionsnummer gefunden
-                    const versionNumber = versionMatch[1];
-                    
-                    // Version im Header anzeigen
-                    const headerElement = document.querySelector('.control-header span');
-                    if (headerElement) {
-                        headerElement.innerHTML = `Wiesen Neuburg Nord <small>(v${versionNumber})</small>`;
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Fehler beim Abrufen der Cache-Version:', error);
-        }
-    }
-}
-
-
-init();
-
-
-// Einfache Lösung für mobiles Control-Panel
-document.querySelector('.control-header').addEventListener('click', function() {
-    document.querySelector('.control-panel').classList.toggle('open');
-  });
-  
-  // Layout beim Laden anpassen
-  window.addEventListener('load', function() {
-    setTimeout(displayCacheVersion, 1000);
-
-    if (window.innerWidth < 768) {
-      // Schließe das Panel standardmäßig auf Mobilgeräten
-      document.querySelector('.control-content').classList.add('collapsed');
-    }
-  });
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js');
-}
-</script>
-</body>
-</html>
