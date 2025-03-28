@@ -1,70 +1,125 @@
-// Funktionen für KMZ-Export
+/**
+ * KMZ Export Funktionalitäten
+ * Enthält Funktionen zum Erstellen, Herunterladen und per E-Mail versenden von KMZ-Dateien
+ */
+
+// Hauptfunktion zum Starten des Export-Prozesses
 function createAndExportKMZ() {
-    // Wenn es sich um ein bearbeitetes Polygon handelt, speichern wir die Änderungen
-    if (typeof isEditingExistingPolygon !== 'undefined' && isEditingExistingPolygon) {
-        if (typeof saveEditedPolygon === 'function' && saveEditedPolygon(true)) {
-            alert('Die Änderungen am Polygon wurden gespeichert und werden exportiert.');
+    try {
+        // Prüfen ob ein bearbeitetes Polygon vorliegt
+        if (typeof isEditingExistingPolygon !== 'undefined' && isEditingExistingPolygon) {
+            if (typeof saveEditedPolygon === 'function') {
+                const saved = saveEditedPolygon(true);
+                if (saved) {
+                    alert('Die Änderungen am Polygon wurden gespeichert und werden exportiert.');
+                    
+                    // Polygon-Bearbeitung zurücksetzen
+                    if (typeof clearPolygonPoints === 'function') {
+                        clearPolygonPoints();
+                    }
+                    
+                    // Alle aktivierten Layer wieder anzeigen
+                    for (const layerName in layers) {
+                        const checkbox = document.getElementById(layerName);
+                        if (checkbox && checkbox.checked) {
+                            layers[layerName].addTo(map);
+                        }
+                    }
+                    
+                    // Polygon-Auswahlliste aktualisieren
+                    if (typeof updatePolygonSelectOptions === 'function') {
+                        updatePolygonSelectOptions();
+                    }
+                    
+                    return;
+                }
+            }
+        }
+        
+        // KMZ-Export-Dialog anzeigen
+        showEmailModal();
+    } catch (error) {
+        console.error("Fehler beim KMZ-Export:", error);
+        alert("Beim Exportieren des Polygons ist ein Fehler aufgetreten.");
+    }
+}
+
+/**
+ * Erstellt eine KMZ-Datei mit den angegebenen Metadaten
+ * @param {string} name - Name des Polygons
+ * @param {string} description - Beschreibung des Polygons
+ * @returns {Promise<Blob>} - Promise mit dem Blob der KMZ-Datei
+ */
+function createKMZWithMetadata(name, description) {
+    return new Promise((resolve, reject) => {
+        try {
+            // Erstelle ein JSZip-Objekt
+            const zip = new JSZip();
             
-            // Zurück zum Normalmodus
-            if (typeof clearPolygonPoints === 'function') {
-                clearPolygonPoints();
+            // Sichere Standardwerte falls Parameter fehlen
+            const polygonName = name || 'Neues Polygon';
+            const polygonDesc = description || '';
+            
+            // Polygon-Punkte kopieren und sicherstellen, dass es geschlossen ist
+            if (!polygonPoints || polygonPoints.length < 3) {
+                throw new Error("Zu wenige Punkte für ein gültiges Polygon");
             }
             
-            // Zeige alle aktivierten Layer wieder an
-            for (const layerName in layers) {
-                const checkbox = document.getElementById(layerName);
-                if (checkbox && checkbox.checked) {
-                    layers[layerName].addTo(map);
+            let coordinates = [...polygonPoints];
+            const firstPoint = coordinates[0];
+            const lastPoint = coordinates[coordinates.length - 1];
+            
+            // Polygon schließen, wenn Start- und Endpunkt nicht identisch
+            if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
+                coordinates.push([...firstPoint]);
+            }
+            
+            // Fläche berechnen
+            let areaValue = 0;
+            if (typeof calculatePolygonArea === 'function') {
+                try {
+                    areaValue = calculatePolygonArea(coordinates);
+                } catch (e) {
+                    console.warn("Fehler bei der Flächenberechnung:", e);
                 }
             }
             
-            // Aktualisiere die Polygon-Auswahlliste
-            if (typeof updatePolygonSelectOptions === 'function') {
-                updatePolygonSelectOptions();
+            // Flächentext formatieren
+            const areaText = `${(areaValue / 10000).toFixed(2)} Hektar (${areaValue.toFixed(0)} m²)`;
+            
+            // Beschreibung ergänzen, wenn noch keine Flächenangabe vorhanden
+            let finalDescription = polygonDesc;
+            if (!finalDescription.includes('Fläche:')) {
+                finalDescription += finalDescription ? '\n\n' : '';
+                finalDescription += `Fläche: ${areaText}`;
             }
             
-            return;
-        }
-    }
-    
-    // KMZ-Export-Dialog öffnen
-    showEmailModal();
-}
-
-function createKMZWithMetadata(name, description) {
-    // Ein neues JSZip-Objekt erstellen
-    const zip = new JSZip();
-    
-    // Erstelle ein geschlossenes Polygon
-    let coordinates = [...polygonPoints];
-    if (coordinates.length > 0 && 
-        (coordinates[0][0] !== coordinates[coordinates.length-1][0] || 
-         coordinates[0][1] !== coordinates[coordinates.length-1][1])) {
-        coordinates.push([...coordinates[0]]);
-    }
-    
-    // Berechne die ungefähre Fläche
-    let area = 0;
-    if (typeof calculatePolygonArea === 'function') {
-        area = calculatePolygonArea(coordinates);
-    } else {
-        console.warn('Flächenberechnung nicht verfügbar');
-    }
-    
-    const areaText = `${(area / 10000).toFixed(2)} Hektar (${area.toFixed(0)} m²)`;
-    
-    // Beschreibung formatieren, W3W-Link behalten
-    let finalDescription = description || '';
-    if (!finalDescription.includes('Fläche:')) {
-        finalDescription += finalDescription ? '\n\n' : '';
-        finalDescription += `Fläche: ${areaText}`;
-    }
-    
-    // Erstelle KML-Inhalt
-    const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+            // XML-Sonderzeichen in Name und Beschreibung ersetzen
+            const safeName = polygonName.replace(/[&<>"']/g, c => {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&apos;'
+                }[c];
+            });
+            
+            const safeDescription = finalDescription.replace(/[&<>"']/g, c => {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&apos;'
+                }[c];
+            });
+            
+            // KML-Inhalt erstellen
+            const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>Wiesen Neuburg Nord - ${name}</name>
+    <name>Wiesen Neuburg Nord - ${safeName}</name>
     <Style id="polygonStyle">
       <LineStyle>
         <color>ff0000ff</color>
@@ -75,8 +130,8 @@ function createKMZWithMetadata(name, description) {
       </PolyStyle>
     </Style>
     <Placemark>
-      <name>${name}</name>
-      <description>${finalDescription}</description>
+      <name>${safeName}</name>
+      <description>${safeDescription}</description>
       <styleUrl>#polygonStyle</styleUrl>
       <Polygon>
         <outerBoundaryIs>
@@ -90,84 +145,159 @@ function createKMZWithMetadata(name, description) {
     </Placemark>
   </Document>
 </kml>`;
-    
-    // Füge die KML-Datei zum ZIP hinzu
-    zip.file("doc.kml", kmlContent);
-    
-    // Erzeuge einen Blob (wird asynchron zurückgegeben)
-    return zip.generateAsync({type: "blob"});
-}
-
-function createAndDownloadKMZ(name, description) {
-    if (!name) {
-        console.warn('Kein Name für KMZ-Export angegeben');
-        name = 'Neue_Fläche';
-    }
-    
-    // KMZ mit Metadaten erstellen
-    createKMZWithMetadata(name, description).then(function(kmzBlob) {
-        // Lokalen Download anbieten
-        const fileName = name.replace(/[^\w\s-]/gi, '').replace(/\s+/g, '_');
-        const url = URL.createObjectURL(kmzBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${fileName}.kmz`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }).catch(function(error) {
-        console.error('Fehler beim Erstellen der KMZ-Datei:', error);
-        alert('Beim Erstellen der KMZ-Datei ist ein Fehler aufgetreten.');
+            
+            // KML-Datei zum ZIP hinzufügen
+            zip.file("doc.kml", kmlContent);
+            
+            // KMZ als Blob generieren
+            zip.generateAsync({type: "blob"})
+                .then(blob => resolve(blob))
+                .catch(error => {
+                    console.error("Fehler beim Generieren des ZIP-Archivs:", error);
+                    reject(error);
+                });
+                
+        } catch (error) {
+            console.error("Fehler beim Erstellen der KMZ-Datei:", error);
+            reject(error);
+        }
     });
 }
 
+/**
+ * Erstellt und downloadet eine KMZ-Datei
+ * @param {string} name - Name des Polygons
+ * @param {string} description - Beschreibung des Polygons
+ */
+function createAndDownloadKMZ(name, description) {
+    try {
+        const filename = name ? name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_') : 'Neues_Polygon';
+        
+        createKMZWithMetadata(name, description)
+            .then(blob => {
+                // Download-Link erstellen
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${filename}.kmz`;
+                
+                // Link zum DOM hinzufügen, klicken und entfernen
+                document.body.appendChild(link);
+                link.click();
+                
+                // Aufräumen
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            })
+            .catch(error => {
+                console.error("Download fehlgeschlagen:", error);
+                alert("Beim Herunterladen der KMZ-Datei ist ein Fehler aufgetreten.");
+            });
+    } catch (error) {
+        console.error("Fehler beim Vorbereiten des Downloads:", error);
+        alert("Beim Erstellen der KMZ-Datei ist ein Fehler aufgetreten.");
+    }
+}
+
+/**
+ * Zeigt den E-Mail-Dialog zum Versenden des KMZ-Exports an
+ */
 function showEmailModal() {
-    // Modal-Element prüfen
-    const modal = document.getElementById('email-modal');
-    if (!modal) {
-        console.error('Email-Modal nicht gefunden');
-        return;
-    }
-    
-    // Modal anzeigen
-    modal.style.display = "block";
-    
-    // Titel anpassen, je nachdem ob wir im Bearbeitungsmodus sind
-    const modalTitle = modal.querySelector('h3');
-    if (modalTitle) {
-        if (typeof isEditingExistingPolygon !== 'undefined' && isEditingExistingPolygon) {
-            modalTitle.textContent = 'Bearbeitetes Polygon exportieren';
-        } else {
-            modalTitle.textContent = 'KMZ per E-Mail versenden';
+    try {
+        // Modal-Element suchen
+        const modal = document.getElementById('email-modal');
+        if (!modal) {
+            console.error("E-Mail-Modal nicht gefunden");
+            alert("Der Export-Dialog konnte nicht geöffnet werden.");
+            return;
         }
+        
+        // Modal anzeigen
+        modal.style.display = "block";
+        
+        // Titel entsprechend dem Bearbeitungsstatus anpassen
+        const headerElement = modal.querySelector('h3');
+        if (headerElement) {
+            if (typeof isEditingExistingPolygon !== 'undefined' && isEditingExistingPolygon) {
+                headerElement.textContent = 'Bearbeitetes Polygon exportieren';
+            } else {
+                headerElement.textContent = 'KMZ per E-Mail versenden';
+            }
+        }
+        
+        // What3Words-Button vorbereiten
+        setupWhat3WordsButton();
+        
+        // Download-Button
+        setupDownloadButton(modal);
+        
+        // Schließen- und Abbrechen-Buttons
+        setupCloseButtons(modal);
+        
+        // Senden-Button
+        setupSendButton(modal);
+        
+        // Klick außerhalb schließt Modal
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        };
+        
+        // What3Words automatisch ermitteln
+        setTimeout(() => {
+            const w3wButton = document.getElementById('get-w3w');
+            if (w3wButton) {
+                w3wButton.click();
+            }
+        }, 300);
+    } catch (error) {
+        console.error("Fehler beim Anzeigen des E-Mail-Dialogs:", error);
+        alert("Der Export-Dialog konnte nicht geöffnet werden.");
     }
-    
-    // What3Words-Adresse für die Mitte des Polygons ermitteln
+}
+
+/**
+ * Richtet den What3Words-Button ein
+ */
+function setupWhat3WordsButton() {
     const w3wButton = document.getElementById('get-w3w');
     if (w3wButton) {
         w3wButton.onclick = getWhat3WordsAddress;
     }
-    
-    // Download-Button-Funktionalität
+}
+
+/**
+ * Richtet den Download-Button ein
+ */
+function setupDownloadButton(modal) {
     const downloadBtn = document.getElementById('download-kmz');
     if (downloadBtn) {
         downloadBtn.onclick = function() {
-            // Hole Polygon-Namen und Beschreibung
-            const nameField = document.getElementById('polygon-name');
-            const descField = document.getElementById('polygon-description');
-            
-            const name = nameField ? nameField.value : 'Neue Fläche';
-            const description = descField ? descField.value : '';
-            
-            // Erstelle aktualisierten KMZ-Blob mit neuem Namen und Beschreibung
-            createAndDownloadKMZ(name, description);
-            
-            // Modal schließen
-            modal.style.display = "none";
+            try {
+                const nameField = document.getElementById('polygon-name');
+                const descField = document.getElementById('polygon-description');
+                
+                const name = nameField ? nameField.value : 'Neues Polygon';
+                const description = descField ? descField.value : '';
+                
+                createAndDownloadKMZ(name, description);
+                modal.style.display = "none";
+            } catch (error) {
+                console.error("Fehler beim Download:", error);
+                alert("Beim Herunterladen der KMZ-Datei ist ein Fehler aufgetreten.");
+            }
         };
     }
-    
-    // Close-Button-Funktionalität
+}
+
+/**
+ * Richtet die Schließen-Buttons ein
+ */
+function setupCloseButtons(modal) {
+    // Schließen-Button oben rechts
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) {
         closeBtn.onclick = function() {
@@ -182,161 +312,185 @@ function showEmailModal() {
             modal.style.display = "none";
         };
     }
-    
-    // Senden-Button
+}
+
+/**
+ * Richtet den Senden-Button ein
+ */
+function setupSendButton(modal) {
     const sendBtn = document.getElementById('send-email');
     if (sendBtn) {
         sendBtn.onclick = function() {
-            const toField = document.getElementById('email-to');
-            const subjectField = document.getElementById('email-subject');
-            const bodyField = document.getElementById('email-body');
-            const nameField = document.getElementById('polygon-name');
-            const descField = document.getElementById('polygon-description');
-            
-            const to = toField ? toField.value : '';
-            const subject = subjectField ? subjectField.value : 'Polygon Export';
-            const body = bodyField ? bodyField.value : '';
-            const name = nameField ? nameField.value : 'Neue Fläche';
-            const description = descField ? descField.value : '';
-            
-            if (!to) {
-                alert('Bitte geben Sie eine E-Mail-Adresse ein.');
-                return;
+            try {
+                // Eingabefelder auslesen
+                const toField = document.getElementById('email-to');
+                const subjectField = document.getElementById('email-subject');
+                const bodyField = document.getElementById('email-body');
+                const nameField = document.getElementById('polygon-name');
+                const descField = document.getElementById('polygon-description');
+                
+                // Werte abrufen
+                const to = toField ? toField.value : '';
+                const subject = subjectField ? subjectField.value : 'Polygon Export - Wiesen Neuburg Nord';
+                const body = bodyField ? bodyField.value : '';
+                const name = nameField ? nameField.value : 'Neues Polygon';
+                const description = descField ? descField.value : '';
+                
+                // E-Mail-Adresse prüfen
+                if (!to || !to.includes('@')) {
+                    alert('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+                    if (toField) toField.focus();
+                    return;
+                }
+                
+                // KMZ erstellen und versenden
+                createKMZWithMetadata(name, description)
+                    .then(blob => {
+                        sendEmailWithAttachment(to, subject, body, blob);
+                        modal.style.display = "none";
+                    })
+                    .catch(error => {
+                        console.error("Fehler beim Erstellen der KMZ:", error);
+                        alert("Beim Vorbereiten des E-Mail-Anhangs ist ein Fehler aufgetreten.");
+                    });
+            } catch (error) {
+                console.error("Fehler beim E-Mail-Versand:", error);
+                alert("Beim Vorbereiten der E-Mail ist ein Fehler aufgetreten.");
             }
-            
-            // Erzeuge aktualisierten KMZ-Blob mit Namen und Beschreibung
-            const updatedKmzBlob = createKMZWithMetadata(name, description);
-            
-            // Sende E-Mail (in echter Implementierung würde hier ein AJAX-Call stehen)
-            sendEmailWithAttachment(to, subject, body, updatedKmzBlob);
-            modal.style.display = "none";
         };
     }
-    
-    // Wenn außerhalb des Modals geklickt wird, schließen
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    };
-    
-    // Automatisch What3Words ermitteln
-    setTimeout(() => {
-        if (w3wButton) {
-            w3wButton.click();
-        }
-    }, 500);
 }
 
-// What3Words-Adresse für die Mitte des Polygons ermitteln
+/**
+ * Ermittelt die What3Words-Adresse für die Mitte des Polygons
+ */
 function getWhat3WordsAddress() {
-    if (!polygonLayer) {
-        console.warn('Kein polygonLayer für What3Words-Adresse vorhanden');
-        return;
-    }
-    
-    // Mittelpunkt des Polygons berechnen
-    const bounds = polygonLayer.getBounds();
-    const center = bounds.getCenter();
-    
-    // Lade Status anzeigen
-    const w3wInput = document.getElementById('w3w-address');
-    if (!w3wInput) {
-        console.error('What3Words-Adressfeld nicht gefunden');
-        return;
-    }
-    
-    w3wInput.value = 'Wird ermittelt...';
-    
-    // What3Words API-Aufruf
-    fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${center.lat},${center.lng}&language=de&format=json&key=YOUR_API_KEY`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP-Fehler: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.words) {
-                // W3W-Adresse anzeigen
-                w3wInput.value = data.words;
-                
-                // URL im Format what3words.com/wort1.wort2.wort3 erstellen
-                const w3wUrl = `https://what3words.com/${data.words}`;
-                
-                // Zur Beschreibung hinzufügen
-                const descriptionField = document.getElementById('polygon-description');
-                if (descriptionField) {
-                    // Alte What3Words-Einträge entfernen
-                    let description = descriptionField.value;
-                    const lines = description.split('\n');
-                    const filteredLines = lines.filter(line => !line.toLowerCase().includes('what3words'));
-                    description = filteredLines.join('\n');
-                    
-                    // Neuen What3Words-Link hinzufügen
-                    if (description) {
-                        description += '\n\n';
-                    }
-                    description += `What3Words: ${w3wUrl}`;
-                    descriptionField.value = description;
-                }
-            } else {
-                w3wInput.value = 'Fehler bei der Ermittlung';
-                console.warn('What3Words-API hat keine Wörter zurückgegeben:', data);
-            }
-        })
-        .catch(error => {
-            console.error('Fehler bei der W3W-Abfrage:', error);
-            w3wInput.value = 'API-Fehler';
-            
-            // Fallback für Demos ohne API-Key
+    try {
+        if (!polygonLayer) {
+            console.warn("Kein Polygon vorhanden für What3Words-Ermittlung");
+            return;
+        }
+        
+        // Mittelpunkt des Polygons berechnen
+        const bounds = polygonLayer.getBounds();
+        const center = bounds.getCenter();
+        
+        // Lade-Status anzeigen
+        const w3wInput = document.getElementById('w3w-address');
+        if (w3wInput) {
+            w3wInput.value = 'Wird ermittelt...';
+        }
+        
+        // Da wir keinen API-Key haben, verwenden wir einen Dummy-Wert
+        setTimeout(() => {
             const mockW3W = 'beispiel.demo.adresse';
-            w3wInput.value = mockW3W;
             
-            // Zur Beschreibung hinzufügen
-            const descriptionField = document.getElementById('polygon-description');
-            if (descriptionField) {
-                // Alte What3Words-Einträge entfernen
-                let description = descriptionField.value;
-                const lines = description.split('\n');
-                const filteredLines = lines.filter(line => !line.toLowerCase().includes('what3words'));
-                description = filteredLines.join('\n');
-                
-                // Neuen What3Words-Link hinzufügen
-                if (description) {
-                    description += '\n\n';
-                }
-                description += `What3Words: https://what3words.com/${mockW3W}`;
-                descriptionField.value = description;
+            // What3Words-Feld aktualisieren
+            if (w3wInput) {
+                w3wInput.value = mockW3W;
             }
-        });
+            
+            // Beschreibungsfeld aktualisieren
+            updateDescriptionWithW3W(mockW3W);
+        }, 500);
+        
+        /* 
+        // Für echte Implementierung mit API-Key:
+        fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${center.lat},${center.lng}&language=de&format=json&key=ECHTER_API_KEY`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP-Fehler: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.words) {
+                    if (w3wInput) {
+                        w3wInput.value = data.words;
+                    }
+                    updateDescriptionWithW3W(data.words);
+                } else {
+                    throw new Error("Ungültige Antwort von What3Words API");
+                }
+            })
+            .catch(error => {
+                console.error("Fehler bei der What3Words-API:", error);
+                const mockW3W = 'beispiel.demo.adresse';
+                if (w3wInput) {
+                    w3wInput.value = mockW3W;
+                }
+                updateDescriptionWithW3W(mockW3W);
+            });
+        */
+    } catch (error) {
+        console.error("Fehler bei der What3Words-Verarbeitung:", error);
+        const w3wInput = document.getElementById('w3w-address');
+        if (w3wInput) {
+            w3wInput.value = 'Fehler bei der Ermittlung';
+        }
+    }
 }
 
-function sendEmailWithAttachment(to, subject, body, kmzBlobPromise) {
-    // KMZ-Blob auflösen (falls es ein Promise ist)
-    if (kmzBlobPromise instanceof Promise) {
-        kmzBlobPromise.then(blob => sendEmailWithAttachment(to, subject, body, blob))
-        .catch(error => {
-            console.error('Fehler beim Auflösen des KMZ-Blobs:', error);
-            alert('Beim Vorbereiten der E-Mail ist ein Fehler aufgetreten.');
-        });
-        return;
+/**
+ * Aktualisiert das Beschreibungsfeld mit der What3Words-Adresse
+ */
+function updateDescriptionWithW3W(words) {
+    try {
+        const descField = document.getElementById('polygon-description');
+        if (!descField) return;
+        
+        // URL erstellen
+        const w3wUrl = `https://what3words.com/${words}`;
+        
+        // Bestehenden Text abrufen und What3Words-Einträge entfernen
+        let description = descField.value || '';
+        const lines = description.split('\n');
+        const filteredLines = lines.filter(line => !line.toLowerCase().includes('what3words'));
+        description = filteredLines.join('\n').trim();
+        
+        // Neuen What3Words-Link hinzufügen
+        if (description) {
+            description += '\n\n';
+        }
+        description += `What3Words: ${w3wUrl}`;
+        
+        // Aktualisiertes Feld setzen
+        descField.value = description;
+    } catch (error) {
+        console.error("Fehler beim Aktualisieren der Beschreibung:", error);
     }
-    
-    // In einer echten Implementierung würde hier ein AJAX-Call zum Server stehen
-    // Hier Download-Option als Fallback
-    alert('E-Mail-Versand-Funktion ist noch nicht implementiert. Die KMZ-Datei wird stattdessen zum Download angeboten.');
-    
-    // Lokalen Download anbieten
-    const nameField = document.getElementById('polygon-name');
-    const name = nameField ? nameField.value : 'Wiesen_Neuburg_Nord_Polygon';
-    const safeName = name.replace(/[^\w\s-]/gi, '').replace(/\s+/g, '_');
-    
-    const url = URL.createObjectURL(kmzBlobPromise);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${safeName}.kmz`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+}
+
+/**
+ * Sendet eine E-Mail mit KMZ-Anhang
+ */
+function sendEmailWithAttachment(to, subject, body, kmzBlob) {
+    try {
+        // Hier würde in einer echten Implementierung ein API-Aufruf stehen
+        // Da wir keinen Server haben, bieten wir den Download als Fallback an
+        
+        alert('E-Mail-Versand nicht implementiert. Die KMZ-Datei wird stattdessen zum Download angeboten.');
+        
+        // Dateinamen aus dem Polygon-Namen erstellen
+        const nameField = document.getElementById('polygon-name');
+        const name = nameField ? nameField.value : 'Wiesen_Neuburg_Nord_Polygon';
+        const filename = name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+        
+        // Download anbieten
+        const url = URL.createObjectURL(kmzBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${filename}.kmz`;
+        document.body.appendChild(link);
+        link.click();
+        
+        // Aufräumen
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
+    } catch (error) {
+        console.error("Fehler beim E-Mail-Versand:", error);
+        alert("Beim Versenden der E-Mail ist ein Fehler aufgetreten.");
+    }
 }
