@@ -319,14 +319,23 @@ const map = L.map('map', {
 });
 
   
-// L.control.layers(baseLayers).addTo(map);
-
 var overlays = {
     'Flurstücke': wmsOverlay
-  };
-  
-L.control.layers(baseLayers, overlays).addTo(map);
+};
 wmsOverlay.addTo(map);
+  
+Object.entries(baseLayers).forEach(([name, layer]) => {
+    layer.name = name;
+});
+
+// L.control.layers(baseLayers, overlays).addTo(map);
+const layerControl = L.control.layers(baseLayers, null, {
+    collapsed: true,    // Standardmäßig zugeklappt
+    position: 'bottomright',  // Position unten rechts
+    sortLayers: true,   // Optional: Alphabetische Sortierung
+    sortFunction: (a, b) => a.name.localeCompare(b.name) // Eigene Sortierfunktion
+}).addTo(map);
+
 
 const kmzData = {
     "Abspacher": "data:application/vnd.google-earth.kmz;base64,UEsDBBQACAgIAG9bdVoAAAAAAAAAAAAAAAAHAAAAZG9jLmttbNVVzY7TMBC+9ymicAFpG8duUifIzYoVQloJpApYcfYmbmrVtSPbpZQH4wX2xXCSpskuyQISFw6RPfN98+PxjEOuv+2F95Vpw5Vc+TAIfY/JXBVcliv/7vO7eeJfZzOycyzHlGblb62tXgNwPB4DVTFZchNIZoFjABQgP5t5Hnmr8sOeSVsLTpR0z7IvnBkmvYLX0RgBjbLFP9mTYB4vVn6lxGkewhinN3OIwnCO8VwqvafCb7mO/Z5L1lh0GqfLlVA622zS+xiHkIBW7vEjL+w2gwEioN12zsAv3sja5TDuPyqm/G+4EJnTN2uvVgcrnP8a6baXwE/CEDAUnq/Ilpdb4T77b4qS/E9F+UCrqbr01VhTPkxkx05Z20UE1PseMbXLOy2yF9OdR8CF1ec5CDAW7XJDfxdwYPZczHNZXCnO8lrQnO2p3l3YzXS9uTcVzbdMey+Pyq3S0pIF4uGHOcgykAf7nclXw0l0hgUzueaVde9Bdlsay6x19s3wEjAEZ39yopFz1Fdc9vZtQzB9ow6yoPp0a3rk3NdUf3TP0VDtAMuMYUJQ2zTSQHpMy5XS7jFzgHmMeB6EAcQojpL0KkoCjEO0SNOrcIwFE4w6VozSZJwVJgjGDWuZLhO4mPCF8TI6s1CaRuMstMAYdawITeT1m+zrkRw9fjvhT+vazOPYTbRzebk0Jw77jYD+uSf1fyCb/QRQSwcImDgPwRQCAABXBgAAUEsBAhQAFAAICAgAb1t1Wpg4D8EUAgAAVwYAAAcAAAAAAAAAAAAAAAAAAAAAAGRvYy5rbWxQSwUGAAAAAAEAAQA1AAAASQIAAAAA",
