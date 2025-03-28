@@ -187,12 +187,12 @@ function saveEditedPolygon(doExport = false) {
                 if (updatedDescription) {
                     updatedDescription += '\n\n';
                 }
-                updatedDescription += `What3Words: ${w3wUrl} (Mock)`;
+                updatedDescription += `What3Words: ${w3wUrl}`;
                 
                 // What3Words-Feld aktualisieren
                 const w3wInput = document.getElementById('w3w-address');
                 if (w3wInput) {
-                    w3wInput.value = mockWords;
+                    w3wInput.value = "noch.nicht.implementiert";
                 }
                 
                 // Feature speichern und exportieren
