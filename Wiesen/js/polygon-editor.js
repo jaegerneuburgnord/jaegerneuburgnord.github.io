@@ -175,24 +175,51 @@ function saveEditedPolygon(doExport = false) {
                 const filteredLines = lines.filter(line => !line.toLowerCase().includes('what3words'));
                 updatedDescription = filteredLines.join('\n');
                 
-                // Dummy What3Words-Link hinzufügen (für echte Implementierung mit API ersetzen)
-                const mockW3W = 'beispiel.demo.adresse';
-                if (updatedDescription) {
-                    updatedDescription += '\n\n';
-                }
-                updatedDescription += `What3Words: https://what3words.com/${mockW3W}`;
-                
-                // What3Words-Feld aktualisieren
-                const w3wInput = document.getElementById('w3w-address');
-                if (w3wInput) {
-                    w3wInput.value = mockW3W;
-                }
-            } catch (error) {
-                console.error("Fehler bei What3Words-Aktualisierung:", error);
-                // Fortfahren ohne What3Words-Update
-            }
+               // Mittelpunkt des Polygons berechnen
+               const bounds = polygonLayer.getBounds();
+               const center = bounds.getCenter();
+               
+               // API-Key für What3Words
+               const apiKey = 'IPAZBM3Y';
+               
+               // Anfrage an die What3Words API senden
+               return fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${center.lat},${center.lng}&language=de&format=json&key=${apiKey}`)
+                   .then(response => {
+                       if (!response.ok) {
+                           throw new Error(`HTTP-Fehler: ${response.status}`);
+                       }
+                       return response.json();
+                   })
+                   .then(data => {
+                       if (data && data.words) {
+                           // W3W-Adresse zum Text hinzufügen
+                           const w3wUrl = `https://what3words.com/${data.words}`;
+                           
+                           if (updatedDescription) {
+                               updatedDescription += '\n\n';
+                           }
+                           updatedDescription += `What3Words: ${w3wUrl}`;
+                           
+                           // What3Words-Feld aktualisieren
+                           const w3wInput = document.getElementById('w3w-address');
+                           if (w3wInput) {
+                               w3wInput.value = data.words;
+                           }
+                       }
+                       
+                       // Feature speichern und exportieren
+                       return completePolygonSave(newGeometry, name, updatedDescription, doExport);
+                   })
+                   .catch(error => {
+                       console.error("Fehler bei der What3Words-API:", error);
+                       // Trotz Fehler das Feature speichern
+                       return completePolygonSave(newGeometry, name, updatedDescription, doExport);
+                   });
+           } catch (error) {
+               console.error("Fehler bei What3Words-Aktualisierung:", error);
+           }
         }
-        
+
         // Feature speichern und optional exportieren
         return completePolygonSave(newGeometry, name, updatedDescription, doExport);
     } catch (error) {
