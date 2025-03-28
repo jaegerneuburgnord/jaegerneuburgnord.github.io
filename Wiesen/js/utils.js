@@ -2,7 +2,36 @@
 function sendRealEmail(to, subject, body, attachment) {
     // Diese Funktion würde in einer echten Server-Implementierung den E-Mail-Versand übernehmen
     // Hier nur als Platzhalter - erfordert eine Server-Komponente
-    console.log(`Sende E-Mail an ${to}, Betreff: ${subject}`);
+    console.log(`Sende E-Mail an ${to}
+
+// Funktion zum Einrichten von auf- und zuklappbaren Panels
+function setupCollapsiblePanels() {
+    // Hauptkontrollpanel
+    const controlHeader = document.querySelector('.control-header');
+    const controlContent = document.querySelector('.control-content');
+    const toggleIcon = document.querySelector('.toggle-icon');
+    
+    controlHeader.addEventListener('click', function() {
+        controlContent.classList.toggle('collapsed');
+        toggleIcon.classList.toggle('fa-chevron-up');
+        toggleIcon.classList.toggle('fa-chevron-down');
+        controlHeader.classList.toggle('collapsed');
+    });
+    
+    // Layer-Sektion
+    const sectionHeaders = document.querySelectorAll('.section-header');
+    
+    sectionHeaders.forEach(header => {
+        const icon = header.querySelector('i');
+        const content = header.nextElementSibling;
+        
+        header.addEventListener('click', function() {
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('fa-chevron-down');
+            icon.classList.toggle('fa-chevron-up');
+        });
+    });
+}, Betreff: ${subject}`);
     
     // In einer realen Implementierung könnte hier ein POST-Request an einen Server-Endpunkt stehen
     // z.B. mit FormData, das die E-Mail-Daten und die Datei übermittelt
@@ -159,4 +188,17 @@ function setupCollapsiblePanels() {
         controlHeader.classList.toggle('collapsed');
     });
     
-    // Layer-Se
+    // Layer-Sektion
+    const sectionHeaders = document.querySelectorAll('.section-header');
+    
+    sectionHeaders.forEach(header => {
+        const icon = header.querySelector('i');
+        const content = header.nextElementSibling;
+        
+        header.addEventListener('click', function() {
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('fa-chevron-down');
+            icon.classList.toggle('fa-chevron-up');
+        });
+    });
+}
