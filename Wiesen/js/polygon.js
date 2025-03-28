@@ -161,7 +161,7 @@ function finishPolygon() {
             <h4>Polygonfläche</h4>
             <p>${areaText}</p>
             <button onclick="preparePolygonExport()" style="width: 100%; padding: 5px; margin-top: 5px; cursor: pointer;">
-                Als KMZ exportieren
+                Fläche exportieren
             </button>
         </div>
     `;
