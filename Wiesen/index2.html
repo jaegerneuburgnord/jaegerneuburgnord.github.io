@@ -23,46 +23,69 @@
         <i class="fas fa-chevron-up toggle-icon"></i>
     </div>
     <div class="control-content">
-            <div class="search-container">
-                <input class="search-input" placeholder="Suche nach Name oder Beschreibung..." type="text"/>
-                <div class="search-options">
-                    <label>
-                        <input type="checkbox" id="enable-place-search" checked> 
-                        Ortssuche aktivieren
-                    </label>
-                </div>
-                <div class="search-results"></div>
-            </div>
-            <div class="button-container">
-            <button onclick="toggleAllLayers(true)">Alle anzeigen</button>
-            <button onclick="toggleAllLayers(false)">Alle ausblenden</button>
-            <button id="location-button" onclick="showCurrentLocation()"><i class="fas fa-map-marker-alt"></i> Standort anzeigen</button>
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-button active" data-tab="search-tab">Suche & Ebenen</button>
+            <button class="tab-button" data-tab="polygon-tab">Polygon-Tool</button>
         </div>
 
-        <!-- Polygon-Auswahlsektion -->
-        <div class="polygon-section">
-            <div class="section-header">
-                <span>Polygon-Tool</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="layer-items">
-                <div class="polygon-buttons">
-                    <button id="start-polygon" onclick="startPolygonSelection()"><i class="fas fa-draw-polygon"></i> Polygon zeichnen</button>
-                    <button id="clear-polygon" onclick="clearPolygonPoints()" disabled><i class="fas fa-trash"></i> Löschen</button>
-                    <button id="export-polygon" onclick="preparePolygonExport()" disabled><i class="fas fa-file-export"></i> Als KMZ exportieren</button>
+        <!-- Tab Container -->
+        <div class="tab-container">
+            <!-- Suche & Ebenen Tab -->
+            <div id="search-tab" class="tab-content active">
+                <div class="search-container">
+                    <input class="search-input" placeholder="Suche nach Name oder Beschreibung..." type="text"/>
+                    <div class="search-options">
+                        <label>
+                            <input type="checkbox" id="enable-place-search" checked> 
+                            Ortssuche aktivieren
+                        </label>
+                    </div>
+                    <div class="search-results"></div>
                 </div>
-                <div id="polygon-points">
-                    Keine Punkte ausgewählt
+                <div class="button-container">
+                    <button onclick="toggleAllLayers(true)">Alle anzeigen</button>
+                    <button onclick="toggleAllLayers(false)">Alle ausblenden</button>
+                    <button id="location-button" onclick="showCurrentLocation()"><i class="fas fa-map-marker-alt"></i> Standort anzeigen</button>
                 </div>
-            </div>
-        </div>
 
-        <div class="layer-section">
-            <div class="section-header">
-                <span>Verfügbare Ebenen</span>
-                <i class="fas fa-chevron-down"></i>
+                <div class="layer-section">
+                    <div class="section-header">
+                        <span>Verfügbare Ebenen</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="layer-items" id="layerCheckboxes"></div>
+                </div>
             </div>
-            <div class="layer-items" id="layerCheckboxes"></div>
+
+            <!-- Polygon-Tool Tab -->
+            <div id="polygon-tab" class="tab-content">
+                <div class="polygon-tools">
+                    <div class="polygon-buttons">
+                        <button id="start-polygon" onclick="startPolygonSelection()"><i class="fas fa-draw-polygon"></i> Polygon zeichnen</button>
+                        <button id="clear-polygon" onclick="clearPolygonPoints()" disabled><i class="fas fa-trash"></i> Löschen</button>
+                        <button id="export-polygon" onclick="preparePolygonExport()" disabled><i class="fas fa-file-export"></i> Als KMZ exportieren</button>
+                    </div>
+                    
+                    <div class="polygon-section">
+                        <div class="section-header">
+                            <span>Bestehendes Polygon bearbeiten</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="layer-items">
+                            <p>Wählen Sie ein bestehendes Polygon zur Bearbeitung aus:</p>
+                            <select id="edit-polygon-select">
+                                <option value="">-- Polygon auswählen --</option>
+                            </select>
+                            <button id="load-polygon" onclick="loadPolygonForEditing()" disabled><i class="fas fa-edit"></i> Polygon laden</button>
+                        </div>
+                    </div>
+                    
+                    <div id="polygon-points">
+                        Keine Punkte ausgewählt
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -113,7 +136,9 @@
 <script src="./js/search.js"></script>
 <script src="./js/location.js"></script>
 <script src="./js/polygon.js"></script>
+<script src="./js/polygon-editor.js"></script>
 <script src="./js/kmz-export.js"></script>
+<script src="./js/tabs.js"></script>
 <script src="./js/main.js"></script>
 <script>
 if ('serviceWorker' in navigator) {

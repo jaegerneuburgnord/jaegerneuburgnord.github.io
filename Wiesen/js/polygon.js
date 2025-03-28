@@ -23,6 +23,9 @@ function startPolygonSelection() {
         bayernAtlasCheckbox.checked = true;
     }
     
+    // Andere Ebenen ausblenden, um Zeichnung zu erleichtern
+    hideAllLayersExcept(null);
+    
     // Klick-Event hinzufügen
     map.on('click', addPolygonPoint);
     
@@ -191,8 +194,25 @@ function clearPolygonPoints() {
         polygonLayer = null;
     }
     
+    // Bearbeitungsstatus zurücksetzen
+    isEditingExistingPolygon = false;
+    currentEditingLayerName = null;
+    originalPolygonFeature = null;
+    originalLayer = null;
+    
     // Anzeige aktualisieren
     updatePolygonDisplay();
+    
+    // Alle Layer wieder anzeigen, wenn wir im Bearbeitungsmodus waren
+    if (isEditingExistingPolygon) {
+        // Zeige alle Layer wieder an
+        for (const layerName in layers) {
+            const checkbox = document.getElementById(layerName);
+            if (checkbox && checkbox.checked) {
+                layers[layerName].addTo(map);
+            }
+        }
+    }
 }
 
 function preparePolygonExport() {

@@ -1,5 +1,28 @@
 // Funktionen für KMZ-Export
 function createAndExportKMZ() {
+    // Wenn es sich um ein bearbeitetes Polygon handelt, speichern wir die Änderungen
+    if (isEditingExistingPolygon) {
+        if (saveEditedPolygon()) {
+            alert('Die Änderungen am Polygon wurden gespeichert.');
+            
+            // Zurück zum Normalmodus
+            clearPolygonPoints();
+            
+            // Zeige alle aktivierten Layer wieder an
+            for (const layerName in layers) {
+                const checkbox = document.getElementById(layerName);
+                if (checkbox && checkbox.checked) {
+                    layers[layerName].addTo(map);
+                }
+            }
+            
+            // Aktualisiere die Polygon-Auswahlliste
+            updatePolygonSelectOptions();
+            
+            return;
+        }
+    }
+    
     // KMZ-Export-Dialog öffnen
     showEmailModal();
 }
@@ -30,7 +53,7 @@ function createKMZWithMetadata(name, description) {
     const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <n>Wiesen Neuburg Nord - ${name}</n>
+    <name>Wiesen Neuburg Nord - ${name}</name>
     <Style id="polygonStyle">
       <LineStyle>
         <color>ff0000ff</color>
@@ -41,7 +64,7 @@ function createKMZWithMetadata(name, description) {
       </PolyStyle>
     </Style>
     <Placemark>
-      <n>${name}</n>
+      <name>${name}</name>
       <description>${finalDescription}</description>
       <styleUrl>#polygonStyle</styleUrl>
       <Polygon>
@@ -83,6 +106,14 @@ function showEmailModal(kmzBlob) {
     // Modal anzeigen
     const modal = document.getElementById('email-modal');
     modal.style.display = "block";
+    
+    // Titel anpassen, je nachdem ob wir im Bearbeitungsmodus sind
+    const modalTitle = modal.querySelector('h3');
+    if (isEditingExistingPolygon) {
+        modalTitle.textContent = 'Bearbeitetes Polygon exportieren';
+    } else {
+        modalTitle.textContent = 'KMZ per E-Mail versenden';
+    }
     
     // What3Words-Adresse für die Mitte des Polygons ermitteln
     document.getElementById('get-w3w').onclick = function() {
