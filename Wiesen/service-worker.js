@@ -1,25 +1,27 @@
 // Ändere die Cache-Version, wenn du Updates bereitstellen möchtest
-const CACHE_VERSION = 22;
+const CACHE_VERSION = 24;
 const CACHE_NAME = `wiesen-karte-cache-v${CACHE_VERSION}`;
 
 const filesToCache = [
   './',
   './index.html',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
-  'https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/dist/togeojson.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css',
   './styles.css',
   './js/utils.js',
   './js/map-config.js',
   './js/search.js',
   './js/location.js',
   './js/polygon.js',
+  './js/polygon-editor.js',
   './js/kmz-export.js',
+  './js/tabs.js',
   './js/main.js',
   './manifest.json',
-  './icon-192x192.png'
+  './icon-192x192.png',
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  'https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/dist/togeojson.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css'
 ];
 
 // Installation: Cache-Ressourcen speichern
