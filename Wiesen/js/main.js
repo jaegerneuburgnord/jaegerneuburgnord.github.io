@@ -75,7 +75,12 @@ document.querySelector('.control-header').addEventListener('click', function() {
   
 // Layout beim Laden anpassen
 window.addEventListener('load', function() {
-    setTimeout(displayCacheVersion, 1000);
+    // Cache-Version anzeigen, falls verfügbar
+    setTimeout(function() {
+        if (typeof displayCacheVersion === 'function') {
+            displayCacheVersion();
+        }
+    }, 1000);
 
     if (window.innerWidth < 768) {
         // Schließe das Panel standardmäßig auf Mobilgeräten
