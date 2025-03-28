@@ -512,7 +512,6 @@ const bayernAtlasServerOptions = {
 // Jetzt die baseLayers mit korrekten Bing-Layern
 const baseLayers = {
     'Bayern Atlas Luftbild': L.tileLayer('https://intergeo{s}.bayernwolke.de/betty/g_satdop20_komplett/{z}/{x}/{y}', bayernAtlasServerOptions),
-    'Bayern Atlas Strassen': L.tileLayer('https://intergeo{s}.bayernwolke.de/betty/c_g_atkishybrid_alkisinvers_parzellar/{z}/{x}/{y}', bayernAtlasServerOptions),
     'Bing Aerial': L.tileLayer.bing('https://t{s}.ssl.ak.tiles.virtualearth.net/tiles/a{q}?g=1', {
         subdomains: ['0', '1', '2', '3', '4'],
         attribution: '© Microsoft'
@@ -538,6 +537,9 @@ var wmsOverlay = L.tileLayer.wms(
   }
 );
 
+var bayerAtlasOverlay = L.tileLayer('https://intergeo{s}.bayernwolke.de/betty/c_g_atkishybrid_alkisinvers_parzellar/{z}/{x}/{y}', bayernAtlasServerOptions);
+
+
 const map = L.map('map', {
     center: [47.6, 13.2],
     zoom: 8,
@@ -546,8 +548,10 @@ const map = L.map('map', {
 
   
 var overlays = {
-    'Flurstücke': wmsOverlay
+    'Flurstücke': wmsOverlay,
+    'Flurstücke Bayern Atlas': bayerAtlasOverlay
 };
+
 wmsOverlay.addTo(map);
   
 Object.entries(baseLayers).forEach(([name, layer]) => {
