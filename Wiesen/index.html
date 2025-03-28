@@ -13,6 +13,32 @@
 <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/dist/togeojson.umd.min.js"></script>
 <script src="main.js"></script>
 <style>
+/* Füge diese einfachen CSS-Anpassungen hinzu */
+@media screen and (max-width: 768px) {
+    /* Für Mobilgeräte */
+    body, html, #map {
+      height: 100%; 
+      margin: 0;
+      padding: 0;
+    }
+    
+    .control-header {
+      height: 40px;
+      padding: 5px 10px;
+    }
+    
+    /* Control-Panel kleiner machen */
+    .control-panel {
+      max-height: 40px;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    
+    /* Wenn geöffnet, dann erweitern */
+    .control-panel.open {
+      max-height: 70vh;
+    }
+  }    
     body { 
         margin: 0; 
         padding: 0; 
@@ -641,7 +667,22 @@ function stopLocationTracking() {
     document.getElementById('location-button').innerHTML = '<i class="fas fa-map-marker-alt"></i> Standort anzeigen';
 }
 
+
 init();
+
+
+// Einfache Lösung für mobiles Control-Panel
+document.querySelector('.control-header').addEventListener('click', function() {
+    document.querySelector('.control-panel').classList.toggle('open');
+  });
+  
+  // Layout beim Laden anpassen
+  window.addEventListener('load', function() {
+    if (window.innerWidth < 768) {
+      // Schließe das Panel standardmäßig auf Mobilgeräten
+      document.querySelector('.control-content').classList.add('collapsed');
+    }
+  });
 </script>
 <script>
 if ('serviceWorker' in navigator) {
