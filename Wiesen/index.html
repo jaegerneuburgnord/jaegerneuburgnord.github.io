@@ -238,6 +238,51 @@
         border: 1px solid rgba(66, 133, 244, 0.5);
         box-sizing: border-box;
     }
+
+    .search-divider {
+        padding: 5px;
+        background-color: #f5f5f5;
+        font-weight: bold;
+        border-top: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        font-size: 0.9em;
+    }
+    
+    .search-result-item {
+        padding: 8px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .search-result-item i {
+        margin-right: 8px;
+        color: #4CAF50;
+    }
+    
+    .search-result-item.place-result i {
+        color: #2196F3;
+    }
+    
+    .search-loading {
+        font-style: italic;
+        color: #777;
+        cursor: default;
+    }
+    .search-options {
+        margin-bottom: 10px;
+        font-size: 0.9em;
+        color: #555;
+    }
+    
+    .search-options label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    
+    .search-options input[type="checkbox"] {
+        margin-right: 5px;
+    }    
 </style>
 <link href="./icon-192x192.png" rel="icon" type="image/png"/>
 <link href="./icon-192x192.png" rel="apple-touch-icon"/>
@@ -250,11 +295,17 @@
         <i class="fas fa-chevron-up toggle-icon"></i>
     </div>
     <div class="control-content">
-        <div class="search-container">
-            <input class="search-input" placeholder="Suche nach Name oder Beschreibung..." type="text"/>
-            <div class="search-results"></div>
-        </div>
-        <div class="button-container">
+            <div class="search-container">
+                <input class="search-input" placeholder="Suche nach Name oder Beschreibung..." type="text"/>
+                <div class="search-options">
+                    <label>
+                        <input type="checkbox" id="enable-place-search" checked> 
+                        Ortssuche aktivieren
+                    </label>
+                </div>
+                <div class="search-results"></div>
+            </div>
+            <div class="button-container">
             <button onclick="toggleAllLayers(true)">Alle anzeigen</button>
             <button onclick="toggleAllLayers(false)">Alle ausblenden</button>
             <button id="location-button" onclick="showCurrentLocation()"><i class="fas fa-map-marker-alt"></i> Standort anzeigen</button>
@@ -269,6 +320,130 @@
     </div>
 </div>
 <script>
+
+    function setupSearch() {
+        const searchInput = document.querySelector('.search-input');
+        const searchResults = document.querySelector('.search-results');
+        const enablePlaceSearch = document.getElementById('enable-place-search');
+        
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            searchResults.innerHTML = '';
+            
+            if (query.length < 2) {
+                return;
+            }
+            
+            // Suche nach übereinstimmenden Features (bestehende Funktionalität)
+            const featureResults = searchIndex.filter(item => 
+                item.name.toLowerCase().includes(query) || 
+                item.description.toLowerCase().includes(query)
+            );
+            
+            // Begrenzen auf 5 Feature-Ergebnisse, um Platz für Ortssuche zu lassen
+            featureResults.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                resultItem.innerHTML = '<i class="fas fa-map-pin"></i> ' + result.name;
+                resultItem.addEventListener('click', function() {
+                    // Bestehende Funktionalität beibehalten
+                    const checkbox = document.getElementById(result.parentLayer);
+                    checkbox.checked = true;
+                    layers[result.parentLayer].addTo(map);
+                    
+                    map.fitBounds(result.layer.getBounds());
+                    result.layer.openPopup();
+                    
+                    searchInput.value = '';
+                    searchResults.innerHTML = '';
+                });
+                
+                searchResults.appendChild(resultItem);
+            });
+            
+            // Zusätzlich nach Orten suchen, wenn der Query länger als 3 Zeichen ist
+            if (enablePlaceSearch.checked && query.length >= 3) {
+                // Hinweis hinzufügen, dass die Ortssuche läuft
+                const searchingItem = document.createElement('div');
+                searchingItem.className = 'search-result-item search-loading';
+                searchingItem.innerHTML = '<i class="fas fa-search"></i> Suche nach Orten...';
+                searchResults.appendChild(searchingItem);
+                
+                // Replace the Nominatim API call with this Photon API call
+                fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=de`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Remove loading indicator
+                        const loadingItem = document.querySelector('.search-loading');
+                        if (loadingItem) loadingItem.remove();
+                        
+                        if (data.features && data.features.length > 0) {
+                            // Add divider if we have both feature results and place results
+                            if (featureResults.length > 0) {
+                                const divider = document.createElement('div');
+                                divider.className = 'search-divider';
+                                divider.textContent = 'Orte';
+                                searchResults.appendChild(divider);
+                            }
+                            
+                            // Display place search results
+                            data.features.forEach(place => {
+                                const properties = place.properties;
+                                const coordinates = place.geometry.coordinates; // [lon, lat]
+                                
+                                const resultItem = document.createElement('div');
+                                resultItem.className = 'search-result-item place-result';
+                                
+                                // Create display name from Photon results
+                                let displayName = properties.name || '';
+                                if (properties.street) displayName += ', ' + properties.street;
+                                if (properties.city) displayName += ', ' + properties.city;
+                                if (properties.state) displayName += ', ' + properties.state;
+                                
+                                resultItem.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${displayName}`;
+                                resultItem.addEventListener('click', function() {
+                                    // Pan to location (note: Photon returns [lon, lat], but Leaflet uses [lat, lon])
+                                    map.setView([coordinates[1], coordinates[0]], 15);
+                                    
+                                    // Add a temporary marker
+                                    const marker = L.marker([coordinates[1], coordinates[0]])
+                                        .addTo(map)
+                                        .bindPopup(displayName)
+                                        .openPopup();
+                                    
+                                    // Remove marker after 60 seconds
+                                    setTimeout(() => map.removeLayer(marker), 60000);
+                                    
+                                    searchInput.value = '';
+                                    searchResults.innerHTML = '';
+                                });
+                                
+                                searchResults.appendChild(resultItem);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fehler bei der Ortssuche:', error);
+                        const loadingItem = document.querySelector('.search-loading');
+                        if (loadingItem) {
+                            loadingItem.innerHTML = '<i class="fas fa-exclamation-circle"></i> Fehler bei der Ortssuche';
+                            loadingItem.style.color = 'red';
+                        }
+                    });
+                }
+        });
+
+    // Save the preference in localStorage
+    enablePlaceSearch.addEventListener('change', function() {
+        localStorage.setItem('enablePlaceSearch', this.checked);
+    });
+    
+    // Load saved preference
+    if (localStorage.getItem('enablePlaceSearch') !== null) {
+        enablePlaceSearch.checked = localStorage.getItem('enablePlaceSearch') === 'true';
+    }
+
+}
 
 // Zuerst die Quadkey-Umrechnungsfunktion definieren
 function tileXYToQuadKey(x, y, z) {
@@ -502,48 +677,6 @@ function toggleAllLayers(show) {
     }
 }
 
-function setupSearch() {
-    const searchInput = document.querySelector('.search-input');
-    const searchResults = document.querySelector('.search-results');
-    
-    searchInput.addEventListener('input', function() {
-        const query = this.value.toLowerCase();
-        searchResults.innerHTML = '';
-        
-        if (query.length < 2) {
-            return;
-        }
-        
-        // Suche nach übereinstimmenden Features
-        const results = searchIndex.filter(item => 
-            item.name.toLowerCase().includes(query) || 
-            item.description.toLowerCase().includes(query)
-        );
-        
-        // Ergebnisse anzeigen
-        results.slice(0, 10).forEach(result => {
-            const resultItem = document.createElement('div');
-            resultItem.className = 'search-result-item';
-            resultItem.textContent = result.name;
-            resultItem.addEventListener('click', function() {
-                // Checkbox aktivieren
-                const checkbox = document.getElementById(result.parentLayer);
-                checkbox.checked = true;
-                layers[result.parentLayer].addTo(map);
-                
-                // Zum Feature zoomen und Popup öffnen
-                map.fitBounds(result.layer.getBounds());
-                result.layer.openPopup();
-                
-                // Suchfeld leeren
-                searchInput.value = '';
-                searchResults.innerHTML = '';
-            });
-            
-            searchResults.appendChild(resultItem);
-        });
-    });
-}
 
 function setupCollapsiblePanels() {
     // Hauptkontrollpanel
