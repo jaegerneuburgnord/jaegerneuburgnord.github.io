@@ -355,11 +355,28 @@ Object.entries(baseLayers).forEach(([name, layer]) => {
 });
 
 // L.control.layers(baseLayers, overlays).addTo(map);
+// Sichere Sortierfunktion, die undefined-Werte berücksichtigt
 const layerControl = L.control.layers(baseLayers, overlays, {
-    collapsed: true,    // Standardmäßig zugeklappt
-    position: 'bottomright',  // Position unten rechts
-    sortLayers: true,   // Optional: Alphabetische Sortierung
-    sortFunction: (a, b) => a.name.localeCompare(b.name) // Eigene Sortierfunktion
+    collapsed: true,
+    position: 'bottomright',
+    sortLayers: true,
+    sortFunction: function(a, b) {
+        // Finde die Namen der Layer aus dem baseLayers-Objekt
+        let nameA = '';
+        let nameB = '';
+        
+        // Sichere Implementierung der Namensfindung
+        for (const [name, layer] of Object.entries(baseLayers)) {
+            if (layer === a) nameA = name;
+            if (layer === b) nameB = name;
+        }
+        
+        // Sichere Überprüfung für localeCompare
+        if (nameA && nameB) {
+            return nameA.localeCompare(nameB);
+        }
+        return 0; // Keine Änderung der Reihenfolge, wenn einer der Namen nicht gefunden wurde
+    }
 }).addTo(map);
 
 
