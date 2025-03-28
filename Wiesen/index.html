@@ -355,7 +355,7 @@ Object.entries(baseLayers).forEach(([name, layer]) => {
 });
 
 // L.control.layers(baseLayers, overlays).addTo(map);
-const layerControl = L.control.layers(baseLayers, null, {
+const layerControl = L.control.layers(baseLayers, overlays, {
     collapsed: true,    // Standardmäßig zugeklappt
     position: 'bottomright',  // Position unten rechts
     sortLayers: true,   // Optional: Alphabetische Sortierung
