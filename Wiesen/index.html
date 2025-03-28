@@ -243,12 +243,74 @@
     </div>
 </div>
 <script>
-const baseLayers = {
-    "Google Satellite": L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3']}),
-    "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
-    "Google Hybrid": L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3']}),
-    "Google Terrain": L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3']}),
+
+// Zuerst die Quadkey-Umrechnungsfunktion definieren
+function tileXYToQuadKey(x, y, z) {
+    let quadKey = "";
+    for (let i = z; i > 0; i--) {
+        let digit = 0;
+        const mask = 1 << (i - 1);
+        if ((x & mask) !== 0) {
+            digit += 1;
+        }
+        if ((y & mask) !== 0) {
+            digit += 2;
+        }
+        quadKey += digit;
+    }
+    return quadKey;
+}
+
+// Erstelle eine eigene TileLayer-Klasse für Bing
+L.TileLayer.Bing = L.TileLayer.extend({
+    getTileUrl: function(coords) {
+        const quadkey = tileXYToQuadKey(coords.x, coords.y, coords.z);
+        // Ersetze {q} mit quadkey und verarbeite {s} richtig
+        return this._url
+            .replace('{q}', quadkey)
+            .replace('{s}', this.options.subdomains[Math.abs(coords.x + coords.y) % this.options.subdomains.length]);
+    }
+});
+
+// Bing-Layer als Konstruktor implementieren
+L.tileLayer.bing = function(url, options) {
+    return new L.TileLayer.Bing(url, options);
 };
+
+// Bayern Atlas mit mehreren Serveralternativen (intergeo30-40)
+const bayernAtlasServerOptions = {
+    subdomains: ['31', '32', '33', '34', '35', '36', '37', '38', '39', '40'],
+    attribution: '© Bayerische Vermessungsverwaltung'
+};
+
+// Jetzt die baseLayers mit korrekten Bing-Layern
+const baseLayers = {
+    'Bayern Atlas Luftbild': L.tileLayer('https://intergeo{s}.bayernwolke.de/betty/g_satdop20_komplett/{z}/{x}/{y}', bayernAtlasServerOptions),
+    'Bayern Atlas Strassen': L.tileLayer('https://intergeo{s}.bayernwolke.de/betty/c_g_atkishybrid_alkisinvers_parzellar/{z}/{x}/{y}', bayernAtlasServerOptions),
+    'Bing Aerial': L.tileLayer.bing('https://t{s}.ssl.ak.tiles.virtualearth.net/tiles/a{q}?g=1', {
+        subdomains: ['0', '1', '2', '3', '4'],
+        attribution: '© Microsoft'
+    }),
+    'Bing Road': L.tileLayer.bing('https://t{s}.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/{q}?mkt=de-de&it=G,L&shading=hill&og=1668&n=z', {
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        attribution: '© Microsoft'
+    }),
+    "Google Hybrid": L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3']}),
+    "Google Satellite": L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3']}),
+    "Google Terrain": L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3']}),
+    "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+};
+
+var wmsOverlay = L.tileLayer.wms(
+  'https://anbaurecht.traffgoroad.com/geoserver/fba/wms?',
+  {
+    layers: 'flurstuecke',
+    format: 'image/png',
+    transparent: true,
+    version: '1.1.1'
+    // Add other WMS parameters if needed
+  }
+);
 
 const map = L.map('map', {
     center: [47.6, 13.2],
@@ -256,7 +318,15 @@ const map = L.map('map', {
     layers: [baseLayers["Google Satellite"]]
 });
 
-L.control.layers(baseLayers).addTo(map);
+  
+// L.control.layers(baseLayers).addTo(map);
+
+var overlays = {
+    'Flurstücke': wmsOverlay
+  };
+  
+L.control.layers(baseLayers, overlays).addTo(map);
+wmsOverlay.addTo(map);
 
 const kmzData = {
     "Abspacher": "data:application/vnd.google-earth.kmz;base64,UEsDBBQACAgIAG9bdVoAAAAAAAAAAAAAAAAHAAAAZG9jLmttbNVVzY7TMBC+9ymicAFpG8duUifIzYoVQloJpApYcfYmbmrVtSPbpZQH4wX2xXCSpskuyQISFw6RPfN98+PxjEOuv+2F95Vpw5Vc+TAIfY/JXBVcliv/7vO7eeJfZzOycyzHlGblb62tXgNwPB4DVTFZchNIZoFjABQgP5t5Hnmr8sOeSVsLTpR0z7IvnBkmvYLX0RgBjbLFP9mTYB4vVn6lxGkewhinN3OIwnCO8VwqvafCb7mO/Z5L1lh0GqfLlVA622zS+xiHkIBW7vEjL+w2gwEioN12zsAv3sja5TDuPyqm/G+4EJnTN2uvVgcrnP8a6baXwE/CEDAUnq/Ilpdb4T77b4qS/E9F+UCrqbr01VhTPkxkx05Z20UE1PseMbXLOy2yF9OdR8CF1ec5CDAW7XJDfxdwYPZczHNZXCnO8lrQnO2p3l3YzXS9uTcVzbdMey+Pyq3S0pIF4uGHOcgykAf7nclXw0l0hgUzueaVde9Bdlsay6x19s3wEjAEZ39yopFz1Fdc9vZtQzB9ow6yoPp0a3rk3NdUf3TP0VDtAMuMYUJQ2zTSQHpMy5XS7jFzgHmMeB6EAcQojpL0KkoCjEO0SNOrcIwFE4w6VozSZJwVJgjGDWuZLhO4mPCF8TI6s1CaRuMstMAYdawITeT1m+zrkRw9fjvhT+vazOPYTbRzebk0Jw77jYD+uSf1fyCb/QRQSwcImDgPwRQCAABXBgAAUEsBAhQAFAAICAgAb1t1Wpg4D8EUAgAAVwYAAAcAAAAAAAAAAAAAAAAAAAAAAGRvYy5rbWxQSwUGAAAAAAEAAQA1AAAASQIAAAAA",
