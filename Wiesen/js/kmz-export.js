@@ -55,6 +55,16 @@ function createAndExportKMZ() {
 function createKMZWithMetadata(name, description) {
     return new Promise((resolve, reject) => {
         try {
+            // Prüfen, ob JSZip vorhanden ist
+            if (typeof JSZip !== 'function') {
+                throw new Error("JSZip-Bibliothek nicht gefunden");
+            }
+            
+            // Prüfen, ob polygonPoints vorhanden und nicht leer ist
+            if (!polygonPoints || polygonPoints.length < 3) {
+                throw new Error("Zu wenige Punkte für ein gültiges Polygon");
+            }
+            
             // Erstelle ein JSZip-Objekt
             const zip = new JSZip();
             
@@ -63,10 +73,6 @@ function createKMZWithMetadata(name, description) {
             const polygonDesc = description || '';
             
             // Polygon-Punkte kopieren und sicherstellen, dass es geschlossen ist
-            if (!polygonPoints || polygonPoints.length < 3) {
-                throw new Error("Zu wenige Punkte für ein gültiges Polygon");
-            }
-            
             let coordinates = [...polygonPoints];
             const firstPoint = coordinates[0];
             const lastPoint = coordinates[coordinates.length - 1];
@@ -117,6 +123,12 @@ function createKMZWithMetadata(name, description) {
                 }[c];
             });
             
+            // Debug-Ausgabe
+            console.log("Erstelle KML mit:", {
+                name: safeName,
+                coordCount: coordinates.length
+            });
+            
             // KML-Inhalt erstellen
             const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -151,9 +163,15 @@ function createKMZWithMetadata(name, description) {
             // KML-Datei zum ZIP hinzufügen
             zip.file("doc.kml", kmlContent);
             
+            // Debug-Ausgabe für KML
+            console.log("KML-Datei erstellt, Länge:", kmlContent.length);
+            
             // KMZ als Blob generieren
             zip.generateAsync({type: "blob"})
-                .then(blob => resolve(blob))
+                .then(blob => {
+                    console.log("ZIP-Blob erstellt, Größe:", blob.size);
+                    resolve(blob);
+                })
                 .catch(error => {
                     console.error("Fehler beim Generieren des ZIP-Archivs:", error);
                     reject(error);
@@ -165,7 +183,6 @@ function createKMZWithMetadata(name, description) {
         }
     });
 }
-
 /**
  * Erstellt und downloadet eine KMZ-Datei
  * @param {string} name - Name des Polygons
@@ -173,10 +190,35 @@ function createKMZWithMetadata(name, description) {
  */
 function createAndDownloadKMZ(name, description) {
     try {
+        // Prüfen, ob polygonPoints vorhanden und nicht leer ist
+        if (!polygonPoints || polygonPoints.length < 3) {
+            throw new Error("Zu wenige Punkte für ein gültiges Polygon");
+        }
+        
+        // Prüfen, ob JSZip vorhanden ist
+        if (typeof JSZip !== 'function') {
+            console.error("JSZip-Bibliothek nicht gefunden");
+            alert("Fehlende JavaScript-Bibliothek: JSZip");
+            return;
+        }
+        
         const filename = name ? name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_') : 'Neues_Polygon';
+        
+        // Debug-Ausgabe
+        console.log("Starte KMZ-Erstellung mit:", {
+            name: name,
+            description: description,
+            pointsCount: polygonPoints.length
+        });
         
         createKMZWithMetadata(name, description)
             .then(blob => {
+                if (!blob) {
+                    throw new Error("Kein Blob von createKMZWithMetadata erhalten");
+                }
+                
+                console.log("KMZ-Blob erstellt, Größe:", blob.size);
+                
                 // Download-Link erstellen
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -195,14 +237,13 @@ function createAndDownloadKMZ(name, description) {
             })
             .catch(error => {
                 console.error("Download fehlgeschlagen:", error);
-                alert("Beim Herunterladen der KMZ-Datei ist ein Fehler aufgetreten.");
+                alert("Beim Herunterladen der KMZ-Datei ist ein Fehler aufgetreten: " + error.message);
             });
     } catch (error) {
         console.error("Fehler beim Vorbereiten des Downloads:", error);
-        alert("Beim Erstellen der KMZ-Datei ist ein Fehler aufgetreten.");
+        alert("Beim Erstellen der KMZ-Datei ist ein Fehler aufgetreten: " + error.message);
     }
 }
-
 /**
  * Zeigt den E-Mail-Dialog zum Versenden des KMZ-Exports an
  */
