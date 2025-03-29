@@ -392,9 +392,39 @@ async function preprocessImage(imageData) {
     }
 }
 
+/**
+ * Converts geographic coordinates to image pixel coordinates
+ * @param {number} lat - Latitude of the point
+ * @param {number} lng - Longitude of the point
+ * @param {Object} bounds - Map bounds object with getNorthWest() and getSouthEast() methods
+ * @param {number} imageWidth - Width of the image in pixels
+ * @param {number} imageHeight - Height of the image in pixels
+ * @returns {Object} - Object with x and y coordinates in pixels
+ */
 function mapCoordsToImageCoords(lat, lng, bounds, imageWidth, imageHeight) {
-    // Diese Funktion würde geografische Koordinaten in Bildkoordinaten umrechnen
-    throw new Error("Koordinatenumrechnung noch nicht implementiert");
+    // Get the northwest and southeast coordinates from the bounds
+    const nw = bounds.getNorthWest();
+    const se = bounds.getSouthEast();
+    
+    // Calculate the total spans of longitude and latitude in the bounds
+    const lngSpan = se.lng - nw.lng;
+    const latSpan = nw.lat - se.lat;
+    
+    // Avoid division by zero
+    if (lngSpan === 0 || latSpan === 0) {
+        console.warn("Map bounds have zero span in at least one dimension");
+        return { x: 0, y: 0 };
+    }
+    
+    // Calculate the normalized position (0-1) of the point within the bounds
+    const lngNorm = (lng - nw.lng) / lngSpan;
+    const latNorm = (nw.lat - lat) / latSpan;
+    
+    // Convert normalized position to pixel coordinates
+    const x = Math.round(lngNorm * imageWidth);
+    const y = Math.round(latNorm * imageHeight);
+    
+    return { x, y };
 }
 
 async function runONNXSegmentation(model, image, point) {
