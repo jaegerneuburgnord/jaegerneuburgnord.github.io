@@ -234,7 +234,7 @@ function loadPolygonForEditing() {
         setPolygonEditCursor(true); // Cursor ändern
         map.on('click', addPolygonPointInEditMode); // Klick-Event für Punkt-Hinzufügen
     }
-    
+
     if (!foundPolygon) {
         alert('Das ausgewählte Polygon konnte nicht geladen werden.');
     }
@@ -254,6 +254,12 @@ function saveEditedPolygon(doExport = false) {
     
     if (!currentEditingLayerName) {
         console.error("Layer-Name fehlt");
+        return false;
+    }
+    
+    // Prüfen, ob genügend Punkte vorhanden sind
+    if (polygonPoints.length < 3) {
+        alert('Das Polygon benötigt mindestens 3 Punkte.');
         return false;
     }
     

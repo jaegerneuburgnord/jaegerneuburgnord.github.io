@@ -8,33 +8,24 @@ function createAndExportKMZ() {
     try {
         // Prüfen ob ein bearbeitetes Polygon vorliegt
         if (typeof isEditingExistingPolygon !== 'undefined' && isEditingExistingPolygon) {
+            // Vor dem Speichern prüfen, ob genügend Punkte vorhanden sind
+            if (polygonPoints.length < 3) {
+                alert('Das Polygon muss mindestens 3 Punkte haben, um exportiert zu werden.');
+                return;
+            }
+            
             if (typeof saveEditedPolygon === 'function') {
                 const saved = saveEditedPolygon(true);
                 if (saved) {
                     alert('Die Änderungen am Polygon wurden gespeichert und werden exportiert.');
-                    
-                    // Polygon-Bearbeitung zurücksetzen
-                    if (typeof clearPolygonPoints === 'function') {
-                        clearPolygonPoints();
-                    }
-                    
-                    // Alle aktivierten Layer wieder anzeigen
-                    for (const layerName in layers) {
-                        const checkbox = document.getElementById(layerName);
-                        if (checkbox && checkbox.checked) {
-                            layers[layerName].addTo(map);
-                        }
-                    }
-                    
-                    // Polygon-Auswahlliste aktualisieren
-                    if (typeof updatePolygonSelectOptions === 'function') {
-                        updatePolygonSelectOptions();
-                    }
-
-                    showEmailModal();
-                    
                     return;
                 }
+            }
+        } else {
+            // Für neu erstellte Polygone
+            if (!polygonPoints || polygonPoints.length < 3) {
+                alert('Bitte erstellen Sie ein Polygon mit mindestens 3 Punkten, bevor Sie exportieren.');
+                return;
             }
         }
         
