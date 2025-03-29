@@ -40,6 +40,11 @@ function stopPolygonSelection() {
     
     map.off('click', addPolygonPoint);
     
+    // Cursor zurücksetzen
+    setPolygonEditCursor(false);
+    // Event entfernen
+    map.off('click', addPolygonPointInEditMode);
+
     if (polygonPoints.length >= 3) {
         // Ein geschlossenes Polygon erstellen
         finishPolygon();
@@ -170,6 +175,12 @@ function finishPolygon() {
     
     // Auf das Polygon zoomen
     map.fitBounds(polygonLayer.getBounds());
+
+    // Am Ende der Funktion hinzufügen
+    if (isEditingExistingPolygon) {
+        map.on('click', addPolygonPointInEditMode); 
+    }
+
 }
 
 function clearPolygonPoints() {

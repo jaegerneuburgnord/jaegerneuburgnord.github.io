@@ -4,6 +4,130 @@ let originalPolygonFeature = null;
 let originalLayer = null;
 let isEditingExistingPolygon = false;
 
+function addPolygonPointInEditMode(e) {
+    if (!isEditingExistingPolygon || polygonMarkers.length < 2) return;
+    
+    const newPoint = [e.latlng.lat, e.latlng.lng];
+    
+    // Finde die nächste Linie im Polygon
+    let minDist = Infinity;
+    let insertIdx = -1;
+    
+    for (let i = 0; i < polygonMarkers.length - 1; i++) {
+        const p1 = polygonMarkers[i].getLatLng();
+        const p2 = polygonMarkers[i + 1].getLatLng();
+        
+        // Berechne Abstand des Klicks zur Linie
+        const dist = distanceToLine(e.latlng, p1, p2);
+        
+        if (dist < minDist) {
+            minDist = dist;
+            insertIdx = i + 1;
+        }
+    }
+    
+    // Auch den Abstand zur Linie vom letzten zum ersten Punkt prüfen
+    const p1 = polygonMarkers[polygonMarkers.length - 1].getLatLng();
+    const p2 = polygonMarkers[0].getLatLng();
+    const dist = distanceToLine(e.latlng, p1, p2);
+    
+    if (dist < minDist) {
+        minDist = dist;
+        insertIdx = polygonMarkers.length;
+    }
+    
+    // Punkt nur hinzufügen, wenn er nahe genug an einer Linie ist
+    if (minDist < 0.001) { // ca. 100m in Grad
+        // Punkt an der richtigen Position einfügen
+        polygonPoints.splice(insertIdx, 0, newPoint);
+        
+        // Neuen Marker erstellen
+        const marker = L.marker(newPoint, {
+            draggable: true
+        }).addTo(map);
+        
+        // Event für Marker-Drag
+        marker.on('dragend', function(e) {
+            const idx = polygonMarkers.indexOf(this);
+            if (idx !== -1) {
+                const newPos = this.getLatLng();
+                polygonPoints[idx] = [newPos.lat, newPos.lng];
+                updatePolygonDisplay();
+            }
+        });
+        
+        // Event für Marker-Klick (zum Entfernen)
+        marker.on('contextmenu', function(e) {
+            const idx = polygonMarkers.indexOf(this);
+            if (idx !== -1 && polygonMarkers.length > 3) { // Mindestens 3 Punkte behalten
+                map.removeLayer(this);
+                polygonMarkers.splice(idx, 1);
+                polygonPoints.splice(idx, 1);
+                updatePolygonDisplay();
+            }
+        });
+        
+        // Marker an der richtigen Position einfügen
+        polygonMarkers.splice(insertIdx, 0, marker);
+        
+        // Polygon aktualisieren
+        updatePolygonDisplay();
+    }
+}
+
+function setPolygonEditCursor(enable) {
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) return;
+    
+    if (enable) {
+        // Crosshair-Cursor für bessere Genauigkeit
+        mapContainer.style.cursor = 'crosshair';
+    } else {
+        // Zurück zum Standard-Cursor
+        mapContainer.style.cursor = '';
+    }
+}
+
+// Hilfsfunktion zur Berechnung des Abstands eines Punkts zu einer Linie
+function distanceToLine(point, lineStart, lineEnd) {
+    const x = point.lng;
+    const y = point.lat;
+    const x1 = lineStart.lng;
+    const y1 = lineStart.lat;
+    const x2 = lineEnd.lng;
+    const y2 = lineEnd.lat;
+    
+    // Berechne den Abstand
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+    
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    
+    if (len_sq != 0) param = dot / len_sq;
+    
+    let xx, yy;
+    
+    if (param < 0) {
+        xx = x1;
+        yy = y1;
+    } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+    } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+    }
+    
+    const dx = x - xx;
+    const dy = y - yy;
+    
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
 // Funktion zum Laden eines Polygons zur Bearbeitung
 function loadPolygonForEditing() {
     const select = document.getElementById('edit-polygon-select');
@@ -105,6 +229,11 @@ function loadPolygonForEditing() {
             }
         }
     });
+    
+    if (foundPolygon) {
+        setPolygonEditCursor(true); // Cursor ändern
+        map.on('click', addPolygonPointInEditMode); // Klick-Event für Punkt-Hinzufügen
+    }
     
     if (!foundPolygon) {
         alert('Das ausgewählte Polygon konnte nicht geladen werden.');
