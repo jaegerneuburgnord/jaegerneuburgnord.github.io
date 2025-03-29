@@ -150,9 +150,9 @@ async function performSegmentation(lat, lng) {
     
     // Config für Segmentierung
     const config = {
-        useServerModel: true,  // true = Server-API verwenden, false = Browser-Modell verwenden
+        useServerModel: false,  // true = Server-API verwenden, false = Browser-Modell verwenden
         serverEndpoint: 'https://api.example.com/segment-anything',
-        modelLoadPath: './models/segment-anything-lite/',
+        modelLoadPath: '../models/segment-anything-lite/mobilesam/mobile_sam.onnx',
         simulateFallback: true // Simulation verwenden, wenn keine echte Implementierung verfügbar
     };
     
@@ -383,8 +383,13 @@ async function loadTensorFlowModel(path) {
 }
 
 async function preprocessImage(imageData) {
+    if (window.ort) {
+        return preprocessImageForONNX(imageData)
+    }
     // Diese Funktion würde das Bild für die Modellverarbeitung vorbereiten
-    throw new Error("Bildvorverarbeitung noch nicht implementiert");
+    else {
+        throw new Error("Bildvorverarbeitung noch nicht implementiert");
+    }
 }
 
 function mapCoordsToImageCoords(lat, lng, bounds, imageWidth, imageHeight) {
@@ -394,7 +399,11 @@ function mapCoordsToImageCoords(lat, lng, bounds, imageWidth, imageHeight) {
 
 async function runONNXSegmentation(model, image, point) {
     // Diese Funktion würde das ONNX-Modell zur Segmentierung verwenden
-    throw new Error("ONNX-Segmentierung noch nicht implementiert");
+    if (window.ort) {
+        runONNXInference(window.segmentAnythingModel, [image, point])
+    } else {
+        throw new Error("ONNX-Segmentierung noch nicht implementiert");
+    }
 }
 
 async function runTensorFlowSegmentation(model, image, point) {
