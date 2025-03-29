@@ -30,6 +30,8 @@ function createAndExportKMZ() {
                     if (typeof updatePolygonSelectOptions === 'function') {
                         updatePolygonSelectOptions();
                     }
+
+                    showEmailModal();
                     
                     return;
                 }
