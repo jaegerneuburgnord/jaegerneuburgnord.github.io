@@ -142,11 +142,86 @@ async function loadONNXRuntimeDynamically() {
  * @param {Object} inputs - Eingabedaten für das Modell
  * @returns {Promise<Object>} - Ausgabe des Modells
  */
+/**
+ * Führt eine Inferenz mit einem ONNX-Modell durch
+ * @param {Object} session - ONNX-Sitzung
+ * @param {Object} inputs - Eingabedaten für das Modell
+ * @returns {Promise<Object>} - Ausgabe des Modells
+ */
 async function runONNXInference(session, inputs) {
     try {
-        // Inferenz-Ausführung mit ONNX Runtime
-        console.log("Führe ONNX-Inferenz aus mit Eingaben:", Object.keys(inputs));
-        const outputMap = await session.run(inputs);
+        // Überprüfen, ob die Session gültig ist
+        if (!session || typeof session.run !== 'function') {
+            throw new Error("Ungültige ONNX-Session");
+        }
+
+        console.log("Eingabeobjekt:", Object.keys(inputs));
+        
+        // Feeds-Objekt für ONNX erstellen
+        const feeds = {};
+        
+        // Überprüfen der verfügbaren Eingabedaten
+        const inputNames = session.inputNames || [];
+        console.log("Verfügbare Modelleingänge:", inputNames);
+        
+        // Für Mobile SAM die richtigen Tensor-Formate erstellen
+        for (const name of inputNames) {
+            if (inputs[name] !== undefined) {
+                // Tensor-Daten existieren bereits im inputs-Objekt
+                const inputData = inputs[name];
+                
+                // Tensor dimensionen ermitteln
+                let dims;
+                if (name === "images") {
+                    // Bild-Tensor: [1, 3, height, width]
+                    dims = inputs.imageDims || [1, 3, 1024, 1024];
+                } else if (name === "point_coords") {
+                    // Punkt-Koordinaten: [1, 2]
+                    dims = [1, 2];
+                } else if (name === "point_labels") {
+                    // Punkt-Labels: [1]
+                    dims = [1];
+                } else if (name === "orig_im_size") {
+                    // Originalbild-Größe: [2]
+                    dims = [2];
+                } else {
+                    // Fallback für unbekannte Eingänge
+                    dims = inputs[`${name}Dims`] || [1];
+                }
+                
+                // OnnxTensor mit korrekten Dimensionen erstellen
+                feeds[name] = new window.ort.Tensor(
+                    // Datentyp ermitteln (Float32Array -> 'float32')
+                    inputData instanceof Float32Array ? 'float32' : 
+                    inputData instanceof Int32Array ? 'int32' : 
+                    inputData instanceof Uint8Array ? 'uint8' : 'float32',
+                    // Die Daten
+                    inputData,
+                    // Die Dimensionen
+                    dims
+                );
+                
+                console.log(`Tensor erstellt für ${name}:`, 
+                           `Typ: ${feeds[name].type}, `, 
+                           `Dims: [${feeds[name].dims.join(',')}]`);
+            } else {
+                console.warn(`Fehlende Eingabe für ${name}`);
+            }
+        }
+        
+        // Prüfen, ob alle erforderlichen Eingänge vorhanden sind
+        const requiredInputs = new Set(inputNames);
+        const providedInputs = new Set(Object.keys(feeds));
+        
+        for (const required of requiredInputs) {
+            if (!providedInputs.has(required)) {
+                throw new Error(`Fehlende erforderliche Eingabe: ${required}`);
+            }
+        }
+        
+        // Inferenz ausführen
+        console.log("Führe ONNX-Inferenz aus mit Feeds:", Object.keys(feeds));
+        const outputMap = await session.run(feeds);
         
         // ONNX-Ausgabe verarbeiten
         const outputs = {};

@@ -236,9 +236,18 @@ async function performServerSegmentation(lat, lng, bounds, zoom, mapCenter, conf
     return data.polygon;
 }
 
-// Browser-basierte Implementierung mit TensorFlow.js oder ONNX
+
+/**
+ * Führt die Browser-basierte Segmentierung durch
+ * @param {number} lat - Breitengrad des angeklickten Punktes
+ * @param {number} lng - Längengrad des angeklickten Punktes
+ * @param {Object} bounds - Kartengrenzen
+ * @param {number} zoom - Zoomstufe der Karte
+ * @param {Object} config - Konfigurationsobjekt
+ * @returns {Promise<Array>} - Array von Polygon-Punkten
+ */
 async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
-    // Modell laden (entweder TensorFlow.js oder ONNX Runtime)
+    // Modell laden (falls noch nicht geladen)
     let model = window.segmentAnythingModel;
     
     if (!model) {
@@ -246,14 +255,27 @@ async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
             console.log("Lade Segment Anything Modell im Browser");
             showSegmentationLoading(true, "Lade KI-Modell...");
             
-            // Prüfen, ob ONNX oder TensorFlow.js verfügbar ist
+            // Modellpfad aus der Konfiguration holen
+            const modelPath = config.modelLoadPath 
+                ? (config.modelLoadPath.endsWith('.onnx') 
+                   ? config.modelLoadPath 
+                   : config.modelLoadPath + '/mobile_sam.onnx')
+                : './models/segment-anything-lite/mobile_sam.onnx';
+            
+            console.log("Modellpfad:", modelPath);
+            
+            // Prüfen, ob ONNX verfügbar ist
             if (window.ort) {
-                model = await loadONNXModel(config.modelLoadPath);
+                model = await loadONNXModel(modelPath, (progress) => {
+                    showSegmentationLoading(true, `Lade KI-Modell: ${progress}%`);
+                });
             } else if (window.tf) {
                 model = await loadTensorFlowModel(config.modelLoadPath);
             } else {
-                throw new Error("Weder ONNX noch TensorFlow.js ist verfügbar");
+                throw new Error("ONNX Runtime ist nicht verfügbar");
             }
+            
+            console.log("Modell erfolgreich geladen");
             
             // Modell für spätere Verwendung cachen
             window.segmentAnythingModel = model;
@@ -267,50 +289,46 @@ async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
     }
     
     // Kartenausschnitt als Bild erfassen
+    showSegmentationLoading(true, "Erfasse Kartenansicht...");
     const imageData = await captureMapView();
     if (!imageData) {
         throw new Error("Konnte Kartenansicht nicht erfassen");
     }
     
-    // Vorverarbeitung des Bildes
-    const processedImage = await preprocessImage(imageData);
+    // Vorverarbeitung des Bildes für SAM
+    showSegmentationLoading(true, "Verarbeite Bild...");
+    const processedImage = await preprocessImageForONNX(imageData);
+    console.log("Bild vorverarbeitet:", processedImage.width, "x", processedImage.height);
     
-    // Punkt im Bildkoordinaten umrechnen
+    // Punkt in Bildkoordinaten umrechnen
     const pointOnImage = mapCoordsToImageCoords(lat, lng, bounds, processedImage.width, processedImage.height);
+    console.log("Punkt auf Bild:", pointOnImage);
     
     // Segmentierung durchführen
     showSegmentationLoading(true, "Führe Segmentierung durch...");
     let segmentationResult;
     
     try {
-        if (window.ort) {
-
-            // Vorbereiten der Eingaben für das Mobile SAM Modell
-            const inputs = {
-                // Das Bild im richtigen Format
-                "images": new Float32Array(processedImage.tensor),
-                
-                // Der Klickpunkt (point_coords und point_labels)
-                "point_coords": pointOnImage.point_coords,
-                "point_labels": pointOnImage.point_labels,
-                
-                // Optional: Ursprüngliche Bildgröße als zusätzliche Info
-                "orig_im_size": new Float32Array([processedImage.originalHeight, processedImage.originalWidth])
-            };
-
-            segmentationResult = await runONNXInference(model, inputs);
-        } else {
-            segmentationResult = await runTensorFlowSegmentation(model, processedImage, pointOnImage);
-        }
+        // SAM-Modell ausführen
+        segmentationResult = await runONNXSegmentation(model, processedImage, pointOnImage);
+        console.log("Segmentierungsergebnis:", segmentationResult);
+        
+    } catch (error) {
+        console.error("Fehler bei der Segmentierung:", error);
+        throw error;
     } finally {
         showSegmentationLoading(false);
     }
     
     // Maske in Polygon-Punkte umwandeln
-    const polygon = maskToPolygon(segmentationResult, bounds, processedImage.width, processedImage.height);
+    showSegmentationLoading(true, "Erstelle Polygon...");
+    const polygon = processMaskToPolygon(segmentationResult, bounds, processedImage.width, processedImage.height);
+    showSegmentationLoading(false);
     
     return polygon;
 }
+
+
 
 // Hilft beim Erfassen des aktuellen Kartenausschnitts als Bild
 async function captureMapView() {
@@ -424,65 +442,155 @@ async function preprocessImage(imageData) {
  * @param {number} imageHeight - Height of the image in pixels
  * @returns {Object} - Object containing point information for SAM model input
  */
+/**
+ * Konvertiert geografische Koordinaten in Bildkoordinaten für SAM-Modelle
+ * @param {number} lat - Breitengrad des Punktes
+ * @param {number} lng - Längengrad des Punktes
+ * @param {Object|Array} bounds - Kartengrenzen (Leaflet-Bounds-Objekt oder [nw, se]-Array)
+ * @param {number} imageWidth - Bildbreite in Pixeln
+ * @param {number} imageHeight - Bildhöhe in Pixeln
+ * @returns {Object} - Punkt-Objekt mit Koordinaten für SAM-Modell
+ */
 function mapCoordsToImageCoords(lat, lng, bounds, imageWidth, imageHeight) {
     // Extrahiere Northwest und Southeast Koordinaten aus den bounds
-    let nw, se;
+    let nwLat, nwLng, seLat, seLng;
     
     if (Array.isArray(bounds)) {
         // Falls bounds als Array [nw, se] übergeben wird
-        nw = bounds[0];
-        se = bounds[1];
+        nwLat = bounds[0][0];
+        nwLng = bounds[0][1];
+        seLat = bounds[1][0];
+        seLng = bounds[1][1];
     } else if (bounds.getNorthWest && bounds.getSouthEast) {
         // Falls bounds ein Leaflet Bounds-Objekt ist
-        nw = bounds.getNorthWest();
-        se = bounds.getSouthEast();
+        const nw = bounds.getNorthWest();
+        const se = bounds.getSouthEast();
+        nwLat = nw.lat;
+        nwLng = nw.lng;
+        seLat = se.lat;
+        seLng = se.lng;
     } else {
-        console.error("Ungültiges bounds-Format");
-        return { x: 0, y: 0 };
+        console.error("Ungültiges bounds-Format:", bounds);
+        throw new Error("Ungültiges bounds-Format");
     }
-    
-    // Extrahiere Koordinaten
-    const nwLat = Array.isArray(nw) ? nw[0] : nw.lat;
-    const nwLng = Array.isArray(nw) ? nw[1] : nw.lng;
-    const seLat = Array.isArray(se) ? se[0] : se.lat;
-    const seLng = Array.isArray(se) ? se[1] : se.lng;
     
     // Berechne die Spannweite von Längen- und Breitengrad
     const lngSpan = seLng - nwLng;
     const latSpan = nwLat - seLat;
     
     // Vermeide Division durch Null
-    if (lngSpan === 0 || latSpan === 0) {
-        console.warn("Kartengrenzen haben in mindestens einer Dimension eine Spannweite von Null");
-        return { x: 0, y: 0 };
+    if (Math.abs(lngSpan) < 1e-10 || Math.abs(latSpan) < 1e-10) {
+        console.warn("Kartengrenzen haben in mindestens einer Dimension eine sehr kleine Spannweite");
+        return { x: Math.floor(imageWidth/2), y: Math.floor(imageHeight/2) };
     }
     
     // Berechne die normalisierte Position (0-1) des Punktes innerhalb der Grenzen
     const lngNorm = (lng - nwLng) / lngSpan;
     const latNorm = (nwLat - lat) / latSpan;
     
-    // Konvertiere normalisierte Position in Pixelkoordinaten
-    const x = Math.round(lngNorm * imageWidth);
-    const y = Math.round(latNorm * imageHeight);
+    // Stelle sicher, dass die normalisierten Werte im Bereich [0,1] liegen
+    const safeLngNorm = Math.max(0, Math.min(1, lngNorm));
+    const safeLatNorm = Math.max(0, Math.min(1, latNorm));
     
-    // Für Mobile SAM benötigen wir die Koordinaten im richtigen Format
-    // Mobile SAM erwartet ein point_coords Tensor der Form [1, 2]
+    // Konvertiere normalisierte Position in Pixelkoordinaten
+    const x = Math.round(safeLngNorm * (imageWidth - 1));
+    const y = Math.round(safeLatNorm * (imageHeight - 1));
+    
+    console.log(`Konvertiert: (${lat}, ${lng}) -> (${x}, ${y}) bei Bildgröße ${imageWidth}x${imageHeight}`);
+    
+    // Einfaches Objekt zurückgeben, das direkt im Code verwendet werden kann
     return {
         x: x,
-        y: y,
-        coords: [x, y],
-        // Das Format, das direkt für SAM-Input verwendet werden kann
-        point_coords: new Float32Array([x, y]),
-        point_labels: new Float32Array([1]) // 1 für Vordergrund-Punkt
+        y: y
     };
 }
 
+
+/**
+ * Führt die Segmentierung mit einem ONNX SAM-Modell durch
+ * @param {Object} model - Geladenes ONNX-Modell (Session)
+ * @param {Object} image - Vorverarbeitetes Bild-Objekt
+ * @param {Object} point - Punkt-Objekt mit Koordinaten
+ * @returns {Promise<Object>} - Segmentierungsergebnis
+ */
 async function runONNXSegmentation(model, image, point) {
-    // Diese Funktion würde das ONNX-Modell zur Segmentierung verwenden
-    if (window.ort) {
-        runONNXInference(window.segmentAnythingModel, [image, point])
-    } else {
-        throw new Error("ONNX-Segmentierung noch nicht implementiert");
+    if (!window.ort) {
+        throw new Error("ONNX Runtime ist nicht verfügbar");
+    }
+    
+    try {
+        console.log("Führe ONNX-Segmentierung aus");
+        console.log("Bildinfo:", image.width, "x", image.height);
+        console.log("Punkt:", point);
+        
+        // Die erwarteten Eingabedaten für das Mobile SAM Modell vorbereiten
+        const inputs = {
+            // Bildtensor
+            "image": image.tensor,
+            "imageDims": image.dims,
+            
+            // Punkt-Koordinaten
+            "point_coords": new Float32Array([point.x, point.y]),
+            
+            // Punkt-Label (1 = Vordergrund)
+            "point_labels": new Float32Array([1]),
+            
+            // Original-Bildgröße
+            "orig_im_size": new Float32Array([image.height, image.width])
+        };
+        
+        // Modelleingänge überprüfen und anpassen
+        let modelInputs = inputs;
+        
+        // Bei Mobile SAM muss das Bild "images" statt "image" heißen
+        if (model.inputNames && model.inputNames.includes("images") && !model.inputNames.includes("image")) {
+            modelInputs = {
+                ...inputs,
+                "images": inputs.image,
+                "imagesDims": inputs.imageDims
+            };
+            delete modelInputs.image;
+            delete modelInputs.imageDims;
+        }
+        
+        // Inferenz durchführen
+        const result = await runONNXInference(model, modelInputs);
+        
+        // Ergebnisse prüfen
+        if (!result) {
+            throw new Error("ONNX-Inferenz hat kein Ergebnis zurückgegeben");
+        }
+        
+        // Das Ausgabeformat anpassen
+        let masks;
+        
+        // Mobile SAM gibt "masks" zurück
+        if (result.masks) {
+            masks = result.masks;
+        }
+        // MobileSAM kann auch "output" zurückgeben
+        else if (result.output) {
+            masks = result.output;
+        }
+        // Andere Modelle könnten andere Namen verwenden
+        else {
+            // Alle Ausgaben durchgehen und die erste mit Maskendaten nehmen
+            for (const key in result) {
+                if (result[key] && result[key].data && result[key].dims) {
+                    masks = result[key];
+                    break;
+                }
+            }
+        }
+        
+        if (!masks) {
+            throw new Error("Keine Masken im Modelloutput gefunden");
+        }
+        
+        return { masks };
+    } catch (error) {
+        console.error("Fehler bei der ONNX-Segmentierung:", error);
+        throw error;
     }
 }
 
