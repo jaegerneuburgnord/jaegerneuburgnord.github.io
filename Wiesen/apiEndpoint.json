@@ -1,0 +1,11 @@
+{
+  "viewParams": {
+    "nw": [lat, lng],       // Nordwestecke der aktuellen Kartenansicht
+    "se": [lat, lng],       // Südostecke der aktuellen Kartenansicht
+    "zoom": 15,             // Zoomstufe der Karte
+    "center": [lat, lng],   // Mittelpunkt der Karte
+    "clickPoint": [lat, lng] // Klickposition des Benutzers
+  },
+  "imageData": "base64...",  // Optional: Base64-kodiertes Bild der Kartenansicht
+  "apiKey": "YOUR_API_KEY"   // Optional: API-Schlüssel für Authentifizierung
+}

@@ -145,6 +145,15 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js');
 }
 </script>
+<!--script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/onnxruntime-web.min.js"></script-->
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas/dist/html2canvas.min.js"></script>
+
+<!-- Segment Anything Integration -->
+<script src="./js/segment-model-loader.js"></script>
+<script src="./js/segment-model-tester.js"></script>
 <script src="./js/segment-anything.js"></script>
+
 </body>
 </html>
