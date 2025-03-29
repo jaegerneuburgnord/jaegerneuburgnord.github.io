@@ -370,10 +370,10 @@ function showSegmentationLoading(show, message = "Segmentierung läuft...") {
 }
 
 // In deinem segment-model-loader.js
-async function loadONNXModel(path, progressCallback) {
+//async function loadONNXModel(path, progressCallback) {
     // Die neue Implementierung aufrufen (ist bereits global verfügbar)
-    return await window.loadONNXModel(path, progressCallback);
-}
+//    return await window.loadONNXModel(path, progressCallback);
+//}
 
 
 async function loadTensorFlowModel(path) {
