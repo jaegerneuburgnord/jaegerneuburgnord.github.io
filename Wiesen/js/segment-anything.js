@@ -247,7 +247,7 @@ async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
             showSegmentationLoading(true, "Lade KI-Modell...");
             
             // Prüfen, ob ONNX oder TensorFlow.js verfügbar ist
-            if (window.onnx) {
+            if (window.ort) {
                 model = await loadONNXModel(config.modelLoadPath);
             } else if (window.tf) {
                 model = await loadTensorFlowModel(config.modelLoadPath);
@@ -283,7 +283,7 @@ async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
     let segmentationResult;
     
     try {
-        if (window.onnx) {
+        if (window.ort) {
             segmentationResult = await runONNXSegmentation(model, processedImage, pointOnImage);
         } else {
             segmentationResult = await runTensorFlowSegmentation(model, processedImage, pointOnImage);
@@ -541,7 +541,7 @@ async function preloadSegmentAnythingModel() {
         showNotification('Lade KI-Modell im Hintergrund...', 3000);
         
         // Prüfen, ob ONNX oder TensorFlow.js verfügbar ist
-        if (window.onnx) {
+        if (window.ort) {
             window.segmentAnythingModel = await loadONNXModel(segmentAnythingConfig.modelLoadPath);
         } else if (window.tf) {
             window.segmentAnythingModel = await loadTensorFlowModel(segmentAnythingConfig.modelLoadPath);
