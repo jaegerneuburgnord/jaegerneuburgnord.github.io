@@ -236,7 +236,7 @@ function preparePolygonExport() {
     // Sicherstellen, dass BayernAtlas-Overlay aktiviert ist
     if (!map.hasLayer(bayerAtlasOverlay)) {
         bayerAtlasOverlay.addTo(map);
-        alert('Bayern Atlas Overlay wurde aktiviert, um Flurstücke anzuzeigen.');
+        // alert('Bayern Atlas Overlay wurde aktiviert, um Flurstücke anzuzeigen.');
     }
     
     // KMZ-Export durchführen

@@ -17,7 +17,7 @@ function createAndExportKMZ() {
             if (typeof saveEditedPolygon === 'function') {
                 const saved = saveEditedPolygon(true);
                 if (saved) {
-                    alert('Die Änderungen am Polygon wurden gespeichert und werden exportiert.');
+                    // alert('Die Änderungen am Polygon wurden gespeichert und werden exportiert.');
                     return;
                 }
             }
