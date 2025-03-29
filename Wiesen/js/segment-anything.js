@@ -369,12 +369,12 @@ function showSegmentationLoading(show, message = "Segmentierung läuft...") {
     }
 }
 
-// Platzhalter-Funktionen für die Modell-Integration
-async function loadONNXModel(path) {
-    // Diese Funktion würde ein ONNX-Modell laden
-    // In der echten Implementierung würde dies die ONNX-Runtime-API verwenden
-    throw new Error("ONNX-Modellladung noch nicht implementiert");
+// In deinem segment-model-loader.js
+async function loadONNXModel(path, progressCallback) {
+    // Die neue Implementierung aufrufen (ist bereits global verfügbar)
+    return await window.loadONNXModel(path, progressCallback);
 }
+
 
 async function loadTensorFlowModel(path) {
     // Diese Funktion würde ein TensorFlow.js-Modell laden
