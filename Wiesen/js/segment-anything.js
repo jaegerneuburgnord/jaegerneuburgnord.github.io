@@ -284,7 +284,21 @@ async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
     
     try {
         if (window.ort) {
-            segmentationResult = await runONNXSegmentation(model, processedImage, pointOnImage);
+
+            // Vorbereiten der Eingaben für das Mobile SAM Modell
+            const inputs = {
+                // Das Bild im richtigen Format
+                "images": new Float32Array(processedImage.tensor),
+                
+                // Der Klickpunkt (point_coords und point_labels)
+                "point_coords": pointOnImage.point_coords,
+                "point_labels": pointOnImage.point_labels,
+                
+                // Optional: Ursprüngliche Bildgröße als zusätzliche Info
+                "orig_im_size": new Float32Array([processedImage.originalHeight, processedImage.originalWidth])
+            };
+
+            segmentationResult = await runONNXInference(model, inputs);
         } else {
             segmentationResult = await runTensorFlowSegmentation(model, processedImage, pointOnImage);
         }
@@ -401,30 +415,66 @@ async function preprocessImage(imageData) {
  * @param {number} imageHeight - Height of the image in pixels
  * @returns {Object} - Object with x and y coordinates in pixels
  */
+/**
+ * Converts geographic coordinates to image pixel coordinates for SAM models
+ * @param {number} lat - Latitude of the point
+ * @param {number} lng - Longitude of the point
+ * @param {Object} bounds - Map bounds object with getNorthWest() and getSouthEast() methods or [nw, se] array
+ * @param {number} imageWidth - Width of the image in pixels
+ * @param {number} imageHeight - Height of the image in pixels
+ * @returns {Object} - Object containing point information for SAM model input
+ */
 function mapCoordsToImageCoords(lat, lng, bounds, imageWidth, imageHeight) {
-    // Get the northwest and southeast coordinates from the bounds
-    const nw = bounds.getNorthWest();
-    const se = bounds.getSouthEast();
+    // Extrahiere Northwest und Southeast Koordinaten aus den bounds
+    let nw, se;
     
-    // Calculate the total spans of longitude and latitude in the bounds
-    const lngSpan = se.lng - nw.lng;
-    const latSpan = nw.lat - se.lat;
-    
-    // Avoid division by zero
-    if (lngSpan === 0 || latSpan === 0) {
-        console.warn("Map bounds have zero span in at least one dimension");
+    if (Array.isArray(bounds)) {
+        // Falls bounds als Array [nw, se] übergeben wird
+        nw = bounds[0];
+        se = bounds[1];
+    } else if (bounds.getNorthWest && bounds.getSouthEast) {
+        // Falls bounds ein Leaflet Bounds-Objekt ist
+        nw = bounds.getNorthWest();
+        se = bounds.getSouthEast();
+    } else {
+        console.error("Ungültiges bounds-Format");
         return { x: 0, y: 0 };
     }
     
-    // Calculate the normalized position (0-1) of the point within the bounds
-    const lngNorm = (lng - nw.lng) / lngSpan;
-    const latNorm = (nw.lat - lat) / latSpan;
+    // Extrahiere Koordinaten
+    const nwLat = Array.isArray(nw) ? nw[0] : nw.lat;
+    const nwLng = Array.isArray(nw) ? nw[1] : nw.lng;
+    const seLat = Array.isArray(se) ? se[0] : se.lat;
+    const seLng = Array.isArray(se) ? se[1] : se.lng;
     
-    // Convert normalized position to pixel coordinates
+    // Berechne die Spannweite von Längen- und Breitengrad
+    const lngSpan = seLng - nwLng;
+    const latSpan = nwLat - seLat;
+    
+    // Vermeide Division durch Null
+    if (lngSpan === 0 || latSpan === 0) {
+        console.warn("Kartengrenzen haben in mindestens einer Dimension eine Spannweite von Null");
+        return { x: 0, y: 0 };
+    }
+    
+    // Berechne die normalisierte Position (0-1) des Punktes innerhalb der Grenzen
+    const lngNorm = (lng - nwLng) / lngSpan;
+    const latNorm = (nwLat - lat) / latSpan;
+    
+    // Konvertiere normalisierte Position in Pixelkoordinaten
     const x = Math.round(lngNorm * imageWidth);
     const y = Math.round(latNorm * imageHeight);
     
-    return { x, y };
+    // Für Mobile SAM benötigen wir die Koordinaten im richtigen Format
+    // Mobile SAM erwartet ein point_coords Tensor der Form [1, 2]
+    return {
+        x: x,
+        y: y,
+        coords: [x, y],
+        // Das Format, das direkt für SAM-Input verwendet werden kann
+        point_coords: new Float32Array([x, y]),
+        point_labels: new Float32Array([1]) // 1 für Vordergrund-Punkt
+    };
 }
 
 async function runONNXSegmentation(model, image, point) {
