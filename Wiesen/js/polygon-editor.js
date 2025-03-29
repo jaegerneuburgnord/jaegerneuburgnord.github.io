@@ -224,7 +224,7 @@ function loadPolygonForEditing() {
                     }
                     
                     // Info anzeigen
-                    alert('Polygon wurde zum Bearbeiten geladen. Sie können die Punkte verschieben, hinzufügen oder löschen.');
+                    // alert('Polygon wurde zum Bearbeiten geladen. Sie können die Punkte verschieben, hinzufügen oder löschen.');
                 }
             }
         }
