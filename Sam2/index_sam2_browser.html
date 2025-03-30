@@ -5,7 +5,7 @@
 </header>
 
 <body>
-    <h1>Segement Anything in the Browser</h1>
+    <h1>Segment Anything in the Browser</h1>
     <div>
         <input title="Image from File" type="file" id="file-in" name="file-in">
     </div>
@@ -23,7 +23,22 @@
         var canvas = document.getElementById('canvas');
         const dimension = 1024;
         var image_embeddings;
-        var imageImageData
+        var imageImageData;
+        // Pre-load the decoder model to avoid loading it at click time
+        var decodingSession;
+
+        async function loadDecoder() {
+            try {
+                // Use a fully qualified URL instead of a relative path
+                decodingSession = await ort.InferenceSession.create('https://files.sunu.in/sam_vit_b_01ec64.decoder.onnx');
+                console.log("Decoder model pre-loaded successfully");
+                return true;
+            } catch (error) {
+                console.error("Failed to pre-load decoder model:", error);
+                document.getElementById("status").textContent = `Error loading decoder model: ${error.message}`;
+                return false;
+            }
+        }
 
         async function handleClick(event) {
             const rect = canvas.getBoundingClientRect();
@@ -31,7 +46,7 @@
             const y = event.clientY - rect.top;
             
             console.log('Clicked position:', x, y);
-            document.getElementById("status").textContent = `Clicked on (${x}, ${y}). Downloading the decoder model if needed and generating mask...`;
+            document.getElementById("status").textContent = `Clicked on (${x}, ${y}). Generating mask...`;
 
             let context = canvas.getContext('2d');
             context.clearRect(0, 0, canvas.width, canvas.height);
@@ -48,8 +63,12 @@
             const hasMask = new ort.Tensor(new Float32Array([0]), [1,]);
             const origianlImageSize = new ort.Tensor(new Float32Array([684, 1024]), [2,]);
 
-            const decodingSession = await ort.InferenceSession.create('./models/sam_vit_b_01ec64.decoder.onnx');
-            console.log("Decoder session", decodingSession);
+            // Check if we have a valid decodingSession
+            if (!decodingSession) {
+                document.getElementById("status").textContent = `Error: Decoder model not loaded. Please reload the page and try again.`;
+                return;
+            }
+
             const decodingFeeds = {
                 "image_embeddings": image_embeddings,
                 "point_coords": pointCoords,
@@ -71,7 +90,9 @@
                 context.drawImage(imageBitmap, 0, 0);
 
             } catch (error) {
-                console.log(`caught error: ${error}`)
+                console.log(`caught error: ${error}`);
+                document.getElementById("status").textContent = `Error generating mask: ${error.message}`;
+                return;
             }
             end = Date.now();
             console.log(`generating masks took ${(end - start)/1000} seconds`);
@@ -80,7 +101,7 @@
 
         async function handleImage(img) {
             console.log(status);
-            document.getElementById("status").textContent = `Uploaded image of size ${img.width}x${img.height}. Downloading the encoder model (~100 MB) if not cached and generating embedding. this will take a minute...`;
+            document.getElementById("status").textContent = `Uploaded image of size ${img.width}x${img.height}. Downloading the encoder model (~100 MB) if not cached and generating embedding. This will take a minute...`;
             console.log(`Uploaded image of size ${img.width}x${img.height}`);
             const scaleX = dimension / img.width;
             const scaleY = dimension / img.height;
@@ -115,16 +136,19 @@
             } catch (error) {
                 console.log(`caught error: ${error}`)
                 document.getElementById("status").textContent = `Error: ${error}`;
+                return;
             }
             let end = Date.now();
             let time_taken = (end - start) / 1000;
             console.log(`Computing image embedding took ${time_taken} seconds`);
-            document.getElementById("status").textContent = `Embedding generated in ${time_taken} seconds. Click on the image to generate mask.`;
-
-            canvas.addEventListener('click', handleClick);
-
+            
+            // Now load the decoder model in advance
+            document.getElementById("status").textContent = `Embedding generated in ${time_taken} seconds. Loading decoder model...`;
+            if (await loadDecoder()) {
+                document.getElementById("status").textContent = `Everything ready! Click on the image to generate mask.`;
+                canvas.addEventListener('click', handleClick);
+            }
         }
-
 
         function loadImage(fileReader) {
             var img = document.getElementById("original-image");
