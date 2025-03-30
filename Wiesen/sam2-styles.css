@@ -1,0 +1,275 @@
+/* SAM2 Integration Styles */
+
+/* SAM2 Loading Progress Bar */
+.sam2-loading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    z-index: 3000;
+    background-color: #3F51B5;
+    transition: width 0.3s ease;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.6;
+    }
+}
+
+/* SAM2 Button Styling */
+#start-segment.sam2-mode {
+    background-color: #3F51B5;
+    position: relative;
+}
+
+#start-segment.sam2-mode:hover {
+    background-color: #303F9F;
+}
+
+#start-segment.sam2-active {
+    background-color: #f44336;
+}
+
+#start-segment.sam2-active:hover {
+    background-color: #d32f2f;
+}
+
+/* SAM2 Badge */
+.sam2-badge {
+    font-size: 0.6em;
+    padding: 2px 4px;
+    background-color: #FF5722;
+    color: white;
+    border-radius: 4px;
+    margin-left: 5px;
+    position: relative;
+    top: -2px;
+    white-space: nowrap;
+}
+
+/* SAM2 Controls Panel */
+.sam2-controls {
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    border-left: 3px solid #3F51B5;
+}
+
+/* Sensitivity Slider */
+.sam2-sensitivity {
+    margin-bottom: 10px;
+}
+
+.sam2-sensitivity label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #333;
+}
+
+.sam2-sensitivity input[type="range"] {
+    width: 100%;
+    height: 6px;
+    background: #ddd;
+    border-radius: 3px;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+}
+
+.sam2-sensitivity input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #3F51B5;
+    cursor: pointer;
+    border: none;
+}
+
+.sam2-sensitivity input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #3F51B5;
+    cursor: pointer;
+    border: none;
+}
+
+.sam2-sensitivity .range-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 3px;
+}
+
+/* SAM2 Status Indicator */
+.sam2-status {
+    display: flex;
+    align-items: center;
+    font-size: 0.85em;
+    color: #555;
+    margin-top: 8px;
+}
+
+.sam2-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.sam2-status-loaded {
+    background-color: #4CAF50;
+}
+
+.sam2-status-loading {
+    background-color: #FF9800;
+    animation: blink 1s infinite;
+}
+
+.sam2-status-error {
+    background-color: #F44336;
+}
+
+.sam2-status-unloaded {
+    background-color: #9E9E9E;
+}
+
+@keyframes blink {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+/* Loading overlay with SAM2 branding */
+.segmentation-loading .loading-content.sam2 {
+    border-left: 4px solid #3F51B5;
+}
+
+.segmentation-loading .spinner.sam2 {
+    border-top-color: #3F51B5;
+}
+
+/* Pulsating click marker */
+.segmentation-marker .pulsating-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(63, 81, 181, 0.6);
+    box-shadow: 0 0 0 rgba(63, 81, 181, 0.4);
+    animation: pulse-marker 1.5s infinite;
+}
+
+.segmentation-marker.active .pulsating-circle {
+    background: rgba(76, 175, 80, 0.6);
+    box-shadow: 0 0 0 rgba(76, 175, 80, 0.4);
+    animation: pulse-marker-active 1.5s infinite;
+}
+
+@keyframes pulse-marker {
+    0% {
+        box-shadow: 0 0 0 0 rgba(63, 81, 181, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(63, 81, 181, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(63, 81, 181, 0);
+    }
+}
+
+@keyframes pulse-marker-active {
+    0% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(76, 175, 80, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
+}
+
+/* Notification styling for SAM2 */
+.notification.sam2 {
+    background-color: #3F51B5;
+    border-left: 4px solid #303F9F;
+}
+
+.notification.sam2-success {
+    background-color: #4CAF50;
+    border-left: 4px solid #388E3C;
+}
+
+.notification.sam2-error {
+    background-color: #F44336;
+    border-left: 4px solid #D32F2F;
+}
+
+/* Performance metrics display */
+.sam2-metrics {
+    background-color: rgba(63, 81, 181, 0.1);
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 8px;
+    font-size: 0.8em;
+    color: #333;
+}
+
+.sam2-metrics .metric {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.sam2-metrics .metric-label {
+    font-weight: bold;
+    color: #3F51B5;
+}
+
+/* Debug visualization container */
+.sam2-debug-viz {
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    padding: 5px;
+    background-color: #fff;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.sam2-debug-viz h4 {
+    margin: 0 0 5px 0;
+    font-size: 0.9em;
+    color: #333;
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+    .sam2-controls {
+        padding: 8px;
+    }
+    
+    .sam2-badge {
+        font-size: 0.5em;
+        padding: 1px 3px;
+    }
+    
+    .sam2-status {
+        font-size: 0.75em;
+    }
+}

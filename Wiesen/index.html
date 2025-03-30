@@ -12,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/dist/togeojson.umd.min.js"></script>
 <link href="./styles.css" rel="stylesheet"/>
+<link href="./sam2-styles.css" rel="stylesheet"/>
 <link href="./icon-192x192.png" rel="icon" type="image/png"/>
 <link href="./icon-192x192.png" rel="apple-touch-icon"/>
 </head>
@@ -63,8 +64,24 @@
                 <div class="polygon-tools">
                     <div class="polygon-buttons">
                         <button id="start-polygon" onclick="startPolygonSelection()"><i class="fas fa-draw-polygon"></i> Fläche zeichnen</button>
+                        <button id="start-segment" onclick="startSegmentAnything()"><i class="fas fa-magic"></i> Fläche erkennen</button>
                         <button id="clear-polygon" onclick="clearPolygonPoints()" disabled><i class="fas fa-trash"></i> Löschen</button>
                         <button id="export-polygon" onclick="preparePolygonExport()" disabled><i class="fas fa-file-export"></i> Fläche exportieren</button>
+                    </div>
+                    
+                    <div id="sam2-controls" class="sam2-controls" style="display: none;">
+                        <div class="sam2-sensitivity">
+                            <label for="sam2-threshold">Empfindlichkeit:</label>
+                            <input type="range" id="sam2-threshold" min="0" max="100" value="50">
+                            <div class="range-values">
+                                <span>Genauer</span>
+                                <span>Größer</span>
+                            </div>
+                        </div>
+                        <div class="sam2-status">
+                            <span class="sam2-status-indicator"></span>
+                            <span class="sam2-status-text">SAM2 Modell wird geladen...</span>
+                        </div>
                     </div>
                     
                     <div class="polygon-section">
@@ -130,6 +147,9 @@
     </div>
 </div>
 
+<!-- SAM2 Model Progress Indicator -->
+<div id="sam2-loading-progress" class="sam2-loading-progress" style="width: 0%; display: none;"></div>
+
 <!-- JavaScript-Dateien einbinden -->
 <script src="./js/utils.js"></script>
 <script src="./js/map-config.js"></script>
@@ -145,7 +165,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js');
 }
 </script>
-<!--script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/onnxruntime-web.min.js"></script-->
+<!-- ONNX Runtime and TensorFlow.js for AI models -->
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas/dist/html2canvas.min.js"></script>
@@ -155,6 +175,10 @@ if ('serviceWorker' in navigator) {
 <script src="./js/segment-model-loader.js"></script>
 <script src="./js/segment-model-tester.js"></script>
 <script src="./js/segment-anything.js"></script>
+
+<!-- SAM2 Integration -->
+<script src="./js/sam2-config.js"></script>
+<script src="./js/sam2-integration.js"></script>
 
 </body>
 </html>
