@@ -263,7 +263,7 @@ async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
                    : config.modelLoadPathEncoder + '/mobile_sam.onnx')
                 : './models/segment-anything-lite/mobile_sam.onnx';
             
-            console.log("ModellpfadEncoder:", modelPath);
+            console.log("ModellpfadEncoder:", modelLoadPathEncoder);
             
             // Prüfen, ob ONNX verfügbar ist
             if (window.ort) {
