@@ -123,7 +123,9 @@
             tf_tensor = tf_tensor.transpose([1, 2, 0]).mul(255);
             imageDataTensor = new ort.Tensor(tf_tensor.dataSync(), tf_tensor.shape);
 
-            const session = await ort.InferenceSession.create('https://files.sunu.in/sam_vit_b_01ec64.encoder.preprocess.quant.onnx');
+            // const session = await ort.InferenceSession.create('https://files.sunu.in/sam_vit_b_01ec64.encoder.preprocess.quant.onnx');
+            const session = await ort.InferenceSession.create('models/sam_vit_b_01ec64.encoder.onnx');
+
             console.log("Encoder Session", session);
             const feeds = { "input_image": imageDataTensor }
             console.log("Computing image embedding; this will take a minute...")
