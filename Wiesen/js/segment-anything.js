@@ -152,7 +152,8 @@ async function performSegmentation(lat, lng) {
     const config = {
         useServerModel: false,  // true = Server-API verwenden, false = Browser-Modell verwenden
         serverEndpoint: 'https://api.example.com/segment-anything',
-        modelLoadPath: '../models/segment-anything-lite/mobilesam/mobile_sam.onnx',
+        modelLoadPathEncoder: '../models/segment-anything-lite/mobilesam/sam2_hiera_tiny.encoder.onnx',
+        modelLoadPathDecoder: '../models/segment-anything-lite/mobilesam/sam2_hiera_tiny.decoder.onnx',
         simulateFallback: true // Simulation verwenden, wenn keine echte Implementierung verfügbar
     };
     
@@ -256,17 +257,17 @@ async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
             showSegmentationLoading(true, "Lade KI-Modell...");
             
             // Modellpfad aus der Konfiguration holen
-            const modelPath = config.modelLoadPath 
-                ? (config.modelLoadPath.endsWith('.onnx') 
-                   ? config.modelLoadPath 
-                   : config.modelLoadPath + '/mobile_sam.onnx')
+            const modelPathEncoder = config.modelLoadPath 
+                ? (config.modelLoadPathEncoder.endsWith('.onnx') 
+                   ? config.modelLoadPathEncoder 
+                   : config.modelLoadPathEncoder + '/mobile_sam.onnx')
                 : './models/segment-anything-lite/mobile_sam.onnx';
             
-            console.log("Modellpfad:", modelPath);
+            console.log("ModellpfadEncoder:", modelPath);
             
             // Prüfen, ob ONNX verfügbar ist
             if (window.ort) {
-                model = await loadONNXModel(modelPath, (progress) => {
+                model = await loadONNXModel(modelPathEncoder, (progress) => {
                     showSegmentationLoading(true, `Lade KI-Modell: ${progress}%`);
                 });
             } else if (window.tf) {
