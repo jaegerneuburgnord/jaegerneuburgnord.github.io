@@ -30,7 +30,7 @@
         async function loadDecoder() {
             try {
                 // Use a fully qualified URL instead of a relative path
-                decodingSession = await ort.InferenceSession.create('https://files.sunu.in/sam_vit_b_01ec64.decoder.onnx');
+                decodingSession = await ort.InferenceSession.create('models/sam_vit_b_01ec64.decoder.onnx');
                 console.log("Decoder model pre-loaded successfully");
                 return true;
             } catch (error) {
