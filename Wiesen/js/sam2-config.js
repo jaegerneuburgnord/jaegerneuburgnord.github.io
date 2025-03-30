@@ -8,7 +8,7 @@ const SAM2_CONFIG = {
     model: {
         // URLs for the model files - using the Hiera Tiny models from mobilesam directory
         modelUrl: './models/mobilesam/sam2_hiera_tiny.decoder.onnx',
-        encoderUrl: './models/mobilesam/sam2_hiera_tiny.encoder.ort',
+        encoderUrl: './models/mobilesam/sam2_hiera_tiny.encoder.onnx',
         
         // Whether to use cache for models
         useCache: true,

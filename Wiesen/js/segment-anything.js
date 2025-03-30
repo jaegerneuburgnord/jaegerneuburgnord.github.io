@@ -257,7 +257,7 @@ async function performBrowserSegmentation(lat, lng, bounds, zoom, config) {
             showSegmentationLoading(true, "Lade KI-Modell...");
             
             // Modellpfad aus der Konfiguration holen
-            const modelPathEncoder = config.modelLoadPath 
+            const modelPathEncoder = config.modelLoadPathEncoder 
                 ? (config.modelLoadPathEncoder.endsWith('.onnx') 
                    ? config.modelLoadPathEncoder 
                    : config.modelLoadPathEncoder + '/mobile_sam.onnx')
