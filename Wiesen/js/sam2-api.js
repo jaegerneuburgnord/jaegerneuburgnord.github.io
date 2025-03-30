@@ -1,7 +1,6 @@
 /**
- * SAM2 API adapter for Labelbox SAM2 model
- * This provides a simplified API for using SAM2 models with map applications
- * Based on: https://github.com/Labelbox/sam2-web
+ * SAM2 API adapter für Labelbox SAM2 model
+ * Diese Version ist speziell für die Hiera Tiny Modelle angepasst
  */
 
 class SAM2API {
@@ -13,7 +12,7 @@ class SAM2API {
         this.modelState = 'unloaded';  // unloaded, loading, loaded, error
         
         // Model instances
-        this.model = null;
+        this.model = null;  // decoder
         this.encoder = null;
         
         // Performance tracking
@@ -67,20 +66,20 @@ class SAM2API {
             // Load models in parallel
             this._updateProgress(5, "Starting model download...");
             
-            const [model, encoder] = await Promise.all([
-                // Main model (70% of progress)
+            const [decoder, encoder] = await Promise.all([
+                // Decoder model (70% of progress) - for Hiera Tiny, this is the decoder
                 this._loadModelWithProgress(
-                    this.config.model?.modelUrl || 'https://cdn.jsdelivr.net/npm/@roboflow/sam2-web@latest/weights/segment-anything-2_quant.onnx',
+                    this.config.model?.modelUrl || './models/mobilesam/sam2_hiera_tiny.decoder.onnx',
                     sessionOptions,
                     (progress) => {
                         const scaledProgress = 5 + progress * 70;
-                        this._updateProgress(scaledProgress, "Loading main model...");
+                        this._updateProgress(scaledProgress, "Loading decoder model...");
                     }
                 ),
                 
                 // Encoder model (25% of progress)
                 this._loadModelWithProgress(
-                    this.config.model?.encoderUrl || 'https://cdn.jsdelivr.net/npm/@roboflow/sam2-web@latest/weights/encoder_quant.onnx',
+                    this.config.model?.encoderUrl || './models/mobilesam/sam2_hiera_tiny.encoder.ort',
                     sessionOptions,
                     (progress) => {
                         const scaledProgress = 75 + progress * 25;
@@ -89,8 +88,8 @@ class SAM2API {
                 )
             ]);
             
-            this.model = model;
-            this.encoder = encoder;
+            this.model = decoder;   // The decoder (Hiera Tiny has separate decoder)
+            this.encoder = encoder; // The encoder
             
             // Finalize initialization
             this.initialized = true;
@@ -150,36 +149,16 @@ class SAM2API {
             const preprocessedImage = await this._preprocessImage(imgElement);
             this.timing.preprocessTime = performance.now() - preprocessStart;
             
-            // Prepare points input
-            const pointsInput = this._preparePointsInput([normalizedPoint], preprocessedImage);
-            
-            // First, run the encoder to get image embeddings
-            const encoderInputs = { images: preprocessedImage.tensor };
-            
-            this.log("Running encoder inference");
-            const encoderStart = performance.now();
-            const encoderOutputs = await this.encoder.run(encoderInputs);
-            const imageEmbedding = encoderOutputs.image_embeddings;
-            
-            // Then run the segmentation model
-            const modelInputs = {
-                image_embeddings: imageEmbedding,
-                point_coords: pointsInput.coords,
-                point_labels: pointsInput.labels
-            };
-            
-            this.log("Running segmentation model inference");
-            const modelStart = performance.now();
-            const outputs = await this.model.run(modelInputs);
-            this.timing.inferenceTime = performance.now() - encoderStart;
+            // Perform segmentation based on model architecture
+            let result;
+            if (this.config.model?.modelArchitecture === 'hiera_tiny') {
+                result = await this._segmentWithHieraTiny(preprocessedImage, normalizedPoint, options);
+            } else {
+                result = await this._segmentWithStandardSAM2(preprocessedImage, normalizedPoint, options);
+            }
             
             // Clear timeout if set
             if (timeoutId) clearTimeout(timeoutId);
-            
-            // Process the output mask
-            const postprocessStart = performance.now();
-            const result = this._processOutput(outputs, preprocessedImage, imgElement, normalizedPoint, options);
-            this.timing.postprocessTime = performance.now() - postprocessStart;
             
             const totalTime = performance.now() - startTime;
             this.log(`Segmentation completed in ${totalTime.toFixed(0)}ms (` + 
@@ -197,27 +176,150 @@ class SAM2API {
     }
     
     /**
+     * Segment with Hiera Tiny model architecture
+     * @param {Object} preprocessedImage - Preprocessed image
+     * @param {Object} normalizedPoint - Normalized point
+     * @param {Object} options - Segmentation options
+     * @returns {Promise<Object>} Segmentation result
+     * @private
+     */
+    async _segmentWithHieraTiny(preprocessedImage, normalizedPoint, options = {}) {
+        this.log("Using Hiera Tiny segmentation workflow");
+        
+        // Prepare points input
+        const pointsInput = this._preparePointsInput([normalizedPoint], preprocessedImage);
+        
+        // First, run the encoder to get image embeddings
+        const encoderInputs = { 
+            images: preprocessedImage.tensor
+        };
+        
+        this.log("Running Hiera Tiny encoder inference");
+        const encoderStart = performance.now();
+        const encoderOutputs = await this.encoder.run(encoderInputs);
+        
+        // Hiera Tiny models may use different embedding field names
+        const imageEmbedding = encoderOutputs.encoder_embedding || 
+                              encoderOutputs.image_embeddings || 
+                              encoderOutputs.embedding;
+        
+        if (!imageEmbedding) {
+            console.warn("Encoder outputs:", Object.keys(encoderOutputs));
+            throw new Error("Image embedding not found in encoder output");
+        }
+        
+        // Then run the decoder (segmentation model)
+        const modelInputs = {
+            image_embeddings: imageEmbedding,
+            point_coords: pointsInput.coords,
+            point_labels: pointsInput.labels,
+            // Additional input for Hiera Tiny
+            orig_im_size: new window.ort.Tensor(
+                'float32', 
+                new Float32Array([preprocessedImage.height, preprocessedImage.width]), 
+                [2]
+            )
+        };
+        
+        this.log("Running Hiera Tiny decoder inference");
+        const decoderStart = performance.now();
+        const outputs = await this.model.run(modelInputs);
+        this.timing.inferenceTime = performance.now() - encoderStart;
+        
+        // Process the output mask
+        const postprocessStart = performance.now();
+        const result = this._processOutput(outputs, preprocessedImage, normalizedPoint, options);
+        this.timing.postprocessTime = performance.now() - postprocessStart;
+        
+        return result;
+    }
+    
+    /**
+     * Segment with standard SAM2 model architecture
+     * @param {Object} preprocessedImage - Preprocessed image
+     * @param {Object} normalizedPoint - Normalized point
+     * @param {Object} options - Segmentation options
+     * @returns {Promise<Object>} Segmentation result
+     * @private
+     */
+    async _segmentWithStandardSAM2(preprocessedImage, normalizedPoint, options = {}) {
+        // Prepare points input
+        const pointsInput = this._preparePointsInput([normalizedPoint], preprocessedImage);
+        
+        // First, run the encoder to get image embeddings
+        const encoderInputs = { images: preprocessedImage.tensor };
+        
+        this.log("Running encoder inference");
+        const encoderStart = performance.now();
+        const encoderOutputs = await this.encoder.run(encoderInputs);
+        const imageEmbedding = encoderOutputs.image_embeddings;
+        
+        // Then run the segmentation model
+        const modelInputs = {
+            image_embeddings: imageEmbedding,
+            point_coords: pointsInput.coords,
+            point_labels: pointsInput.labels
+        };
+        
+        this.log("Running segmentation model inference");
+        const modelStart = performance.now();
+        const outputs = await this.model.run(modelInputs);
+        this.timing.inferenceTime = performance.now() - encoderStart;
+        
+        // Process the output mask
+        const postprocessStart = performance.now();
+        const result = this._processOutput(outputs, preprocessedImage, normalizedPoint, options);
+        this.timing.postprocessTime = performance.now() - postprocessStart;
+        
+        return result;
+    }
+    
+    /**
      * Process segmentation output into a usable format
      * @param {Object} outputs - Model outputs
      * @param {Object} preprocessedImage - Preprocessed image data
-     * @param {HTMLImageElement} originalImage - Original image element
-     * @param {Object} point - The original point used for segmentation
+     * @param {Object} point - The original click point
      * @param {Object} options - Processing options
      * @returns {Object} Processed result
+     * @private
      */
-    _processOutput(outputs, preprocessedImage, originalImage, point, options = {}) {
-        // Extract mask data
-        const mask = outputs.masks || outputs.output;
+    _processOutput(outputs, preprocessedImage, point, options = {}) {
+        // Extract mask data based on model architecture
+        let mask;
+        
+        if (this.config.model?.modelArchitecture === 'hiera_tiny') {
+            // Hiera Tiny may have different output format
+            mask = outputs.masks || outputs.output || outputs.sam_masks;
+            
+            if (!mask || !mask.data) {
+                // Try to find mask in alternative locations
+                for (const key in outputs) {
+                    if (outputs[key] && outputs[key].data && 
+                        outputs[key].dims && outputs[key].dims.length >= 3) {
+                        this.log(`Using alternative mask from ${key}`);
+                        mask = outputs[key];
+                        break;
+                    }
+                }
+            }
+        } else {
+            // Standard SAM2 output format
+            mask = outputs.masks || outputs.output;
+        }
+        
         if (!mask || !mask.data) {
             throw new Error("Invalid mask output from model");
         }
         
         // Convert mask data to binary mask using the confidence threshold
-        const threshold = options.confidenceThreshold || this.config.segmentation?.confidenceThreshold || 0.5;
+        const threshold = options.confidenceThreshold || 
+                          this.config.segmentation?.confidenceThreshold || 
+                          0.5;
+        
         const maskData = mask.data;
         const maskDims = mask.dims;
-        const maskHeight = maskDims[2];
-        const maskWidth = maskDims[3];
+        const maskHeight = maskDims[maskDims.length - 2]; // Account for different formats
+        const maskWidth = maskDims[maskDims.length - 1];
         
         // Create binary mask
         const binaryMask = new Uint8Array(maskHeight * maskWidth);
@@ -237,15 +339,6 @@ class SAM2API {
             );
         }
         
-        // Scale points to original image dimensions
-        const scaledPolygonPoints = polygonPoints ? this._scalePolygonPoints(
-            polygonPoints, 
-            preprocessedImage.width, 
-            preprocessedImage.height,
-            originalImage.width,
-            originalImage.height
-        ) : null;
-        
         // Calculate confidence metrics
         const confidenceMetrics = this._calculateConfidenceMetrics(maskData);
         
@@ -253,14 +346,14 @@ class SAM2API {
         return {
             // Processed data
             mask: binaryMask,
-            polygon: scaledPolygonPoints,
+            polygon: polygonPoints,
             confidence: confidenceMetrics,
             
             // Metadata
             dimensions: {
                 mask: { width: maskWidth, height: maskHeight },
                 processed: { width: preprocessedImage.width, height: preprocessedImage.height },
-                original: { width: originalImage.width, height: originalImage.height }
+                original: { width: preprocessedImage.originalWidth, height: preprocessedImage.originalHeight }
             },
             
             // Timing data
@@ -280,6 +373,7 @@ class SAM2API {
      * @param {number} height - Mask height
      * @param {number} simplifyTolerance - Tolerance for polygon simplification
      * @returns {Array} Array of polygon points
+     * @private
      */
     _maskToPolygon(mask, width, height, simplifyTolerance = 0.0005) {
         // Extract boundary points
@@ -314,6 +408,7 @@ class SAM2API {
      * @param {number} width - Mask width
      * @param {number} height - Mask height
      * @returns {Array} Array of boundary points
+     * @private
      */
     _extractBoundaryPoints(mask, width, height) {
         const boundaryPoints = [];
@@ -344,6 +439,7 @@ class SAM2API {
      * Compute the convex hull of a set of points
      * @param {Array} points - Array of points [x,y]
      * @returns {Array} Convex hull points
+     * @private
      */
     _computeConvexHull(points) {
         if (points.length <= 3) return [...points];
@@ -390,6 +486,7 @@ class SAM2API {
      * @param {Array} p2 - Second point [x,y]
      * @param {Array} p3 - Third point [x,y]
      * @returns {boolean} True if counter-clockwise
+     * @private
      */
     _isCounterClockwise(p1, p2, p3) {
         return (p2[0] - p1[0]) * (p3[1] - p2[1]) - (p2[1] - p1[1]) * (p3[0] - p2[0]) > 0;
@@ -400,6 +497,7 @@ class SAM2API {
      * @param {Array} points - Array of points [x,y]
      * @param {number} tolerance - Simplification tolerance
      * @returns {Array} Simplified polygon
+     * @private
      */
     _simplifyPolygon(points, tolerance) {
         if (points.length <= 2) return points;
@@ -439,6 +537,7 @@ class SAM2API {
      * @param {Array} lineStart - Line start [x,y]
      * @param {Array} lineEnd - Line end [x,y]
      * @returns {number} Perpendicular distance
+     * @private
      */
     _perpendicularDistance(point, lineStart, lineEnd) {
         const x = point[0];
@@ -469,27 +568,10 @@ class SAM2API {
     }
     
     /**
-     * Scale polygon points from processed dimensions to original dimensions
-     * @param {Array} points - Polygon points in normalized coordinates [0-1]
-     * @param {number} processedWidth - Width of the processed image
-     * @param {number} processedHeight - Height of the processed image
-     * @param {number} originalWidth - Width of the original image
-     * @param {number} originalHeight - Height of the original image
-     * @returns {Array} Scaled polygon points
-     */
-    _scalePolygonPoints(points, processedWidth, processedHeight, originalWidth, originalHeight) {
-        if (!points || points.length === 0) return [];
-        
-        return points.map(point => [
-            point[0] * originalWidth / processedWidth,
-            point[1] * originalHeight / processedHeight
-        ]);
-    }
-    
-    /**
      * Calculate confidence metrics from mask data
      * @param {Float32Array|Uint8Array} maskData - Mask probability data
      * @returns {Object} Confidence metrics
+     * @private
      */
     _calculateConfidenceMetrics(maskData) {
         if (!maskData || maskData.length === 0) {
@@ -521,6 +603,7 @@ class SAM2API {
      * Preprocess an image for SAM2
      * @param {HTMLImageElement} image - Image element
      * @returns {Promise<Object>} Preprocessed image data
+     * @private
      */
     async _preprocessImage(image) {
         const startTime = performance.now();
@@ -585,7 +668,13 @@ class SAM2API {
         
         this.log(`Image preprocessed in ${performance.now() - startTime}ms: ${width}x${height}`);
         
-        return { tensor, width, height };
+        return { 
+            tensor, 
+            width, 
+            height, 
+            originalWidth: image.width, 
+            originalHeight: image.height 
+        };
     }
     
     /**
@@ -593,6 +682,7 @@ class SAM2API {
      * @param {Array} points - Array of points {x, y}
      * @param {Object} image - Preprocessed image info
      * @returns {Object} Prepared points
+     * @private
      */
     _preparePointsInput(points, image) {
         // Ensure points are in pixel coordinates
@@ -608,7 +698,7 @@ class SAM2API {
         for (let i = 0; i < pixelPoints.length; i++) {
             coords[i * 2] = pixelPoints[i].x;
             coords[i * 2 + 1] = pixelPoints[i].y;
-            labels[i] = 1; // 1 for foreground
+            labels[i] = 1; // 1 for foreground (can be changed for background points)
         }
         
         return {
@@ -621,6 +711,7 @@ class SAM2API {
      * Normalize a click point to [0-1] range
      * @param {Object} point - Point coordinates
      * @returns {Object} Normalized point
+     * @private
      */
     _normalizePoint(point) {
         // If point is already normalized (between 0-1), return as is
@@ -630,9 +721,9 @@ class SAM2API {
         
         // Otherwise, we assume it's in pixel coordinates and normalize
         // Warning: this makes assumptions about the image dimensions
-        console.warn("Point coordinates may not be normalized. Using default image dimensions.");
-        const defaultWidth = 1024;
-        const defaultHeight = 1024;
+        console.warn("Point coordinates may not be normalized. Using default dimensions.");
+        const defaultWidth = this.config.model?.maxSize || 1024;
+        const defaultHeight = this.config.model?.maxSize || 1024;
         
         return {
             x: point.x / defaultWidth,
@@ -644,6 +735,7 @@ class SAM2API {
      * Convert an image source to an HTMLImageElement
      * @param {HTMLImageElement|string} src - Image source
      * @returns {Promise<HTMLImageElement>} Image element
+     * @private
      */
     async _normalizeImage(src) {
         // If already an HTMLImageElement, return it
@@ -681,65 +773,14 @@ class SAM2API {
         throw new Error("Unsupported image source type");
     }
     
-    /**
-     * Ensure ONNX Runtime is available
-     * @returns {Promise<void>}
-     */
-    async _ensureONNXRuntime() {
-        if (typeof window.ort !== 'undefined') {
-            this.log("ONNX Runtime already loaded", window.ort.version);
-            return;
-        }
-        
-        this.log("Loading ONNX Runtime");
-        
-        // Check alternative locations
-        if (typeof window.onnxruntime !== 'undefined') {
-            window.ort = window.onnxruntime;
-            return;
-        }
-        
-        if (typeof window.ONNXRuntime !== 'undefined') {
-            window.ort = window.ONNXRuntime;
-            return;
-        }
-        
-        // Try to load dynamically
-        try {
-            this._updateProgress(2, "Loading ONNX Runtime...");
-            
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js';
-            
-            await new Promise((resolve, reject) => {
-                script.onload = resolve;
-                script.onerror = () => reject(new Error("Failed to load ONNX Runtime"));
-                document.head.appendChild(script);
-            });
-            
-            if (typeof window.ort === 'undefined' && 
-                typeof window.onnxruntime !== 'undefined') {
-                window.ort = window.onnxruntime;
-            }
-            
-            if (typeof window.ort === 'undefined') {
-                throw new Error("ONNX Runtime failed to initialize");
-            }
-            
-            this.log("ONNX Runtime loaded", window.ort.version);
-            
-        } catch (error) {
-            this.log("Error loading ONNX Runtime:", error);
-            throw new Error("Failed to load ONNX Runtime: " + error.message);
-        }
-    }
-    
+
     /**
      * Load an ONNX model with progress tracking
      * @param {string} url - Model URL
      * @param {Object} options - Session options
      * @param {Function} progressCallback - Progress callback
      * @returns {Promise<Object>} ONNX session
+     * @private
      */
     async _loadModelWithProgress(url, options, progressCallback) {
         try {
@@ -802,7 +843,7 @@ class SAM2API {
             throw error;
         }
     }
-    
+
     /**
      * Register an event handler
      * @param {string} event - Event name
@@ -821,7 +862,7 @@ class SAM2API {
             this.eventHandlers[event] = this.eventHandlers[event].filter(h => h !== handler);
         };
     }
-    
+
     /**
      * Trigger an event
      * @param {string} event - Event name
@@ -839,7 +880,7 @@ class SAM2API {
             }
         }
     }
-    
+
     /**
      * Update loading progress
      * @param {number} progress - Progress percentage (0-100)
@@ -859,12 +900,13 @@ class SAM2API {
             // Hide when complete
             if (progress >= 100) {
                 setTimeout(() => {
+                    progressBar.style.width = '0%';
                     progressBar.style.display = 'none';
                 }, 1000);
             }
         }
     }
-    
+
     /**
      * Update model state
      * @param {string} state - New state
@@ -898,7 +940,7 @@ class SAM2API {
             }
         }
     }
-    
+
     /**
      * Log a message if debug is enabled
      * @param {...*} args - Log arguments
@@ -908,8 +950,68 @@ class SAM2API {
             console.log('[SAM2]', ...args);
         }
     }
-}
 
+    /**
+     * Ensure ONNX Runtime is available
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _ensureONNXRuntime() {
+        if (typeof window.ort !== 'undefined') {
+            this.log("ONNX Runtime already loaded", window.ort.version);
+            return;
+        }
+        
+        this.log("Loading ONNX Runtime");
+        
+        // Check alternative locations
+        if (typeof window.onnxruntime !== 'undefined') {
+            window.ort = window.onnxruntime;
+            return;
+        }
+        
+        if (typeof window.ONNXRuntime !== 'undefined') {
+            window.ort = window.ONNXRuntime;
+            return;
+        }
+        
+        // Try to load dynamically
+        try {
+            this._updateProgress(2, "Loading ONNX Runtime...");
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js';
+            script.crossOrigin = 'anonymous';
+            
+            // Warten, bis das Skript geladen ist
+            await new Promise((resolve, reject) => {
+                script.onload = resolve;
+                script.onerror = () => reject(new Error("Failed to load ONNX Runtime"));
+                document.head.appendChild(script);
+            });
+            
+            // Zusätzliche Wartezeit für die Initialisierung
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            if (typeof window.ort === 'undefined') {
+                if (typeof window.onnxruntime !== 'undefined') {
+                    window.ort = window.onnxruntime;
+                } else if (typeof window.ONNXRuntime !== 'undefined') {
+                    window.ort = window.ONNXRuntime;
+                } else {
+                    throw new Error("ONNX Runtime failed to initialize after loading");
+                }
+            }
+            
+            this.log("ONNX Runtime loaded", window.ort.version);
+            
+        } catch (error) {
+            this.log("Error loading ONNX Runtime:", error);
+            throw new Error("Failed to load ONNX Runtime: " + error.message);
+        }
+    }
+}
+    
 // Create and export a global instance
 window.sam2 = new SAM2API(window.SAM2_CONFIG);
 

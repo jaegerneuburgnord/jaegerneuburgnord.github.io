@@ -6,17 +6,16 @@
 const SAM2_CONFIG = {
     // Model settings
     model: {
-        // URLs for the model files
-        // These point to the latest versions from Roboflow's CDN
-        modelUrl: 'https://cdn.jsdelivr.net/npm/@roboflow/sam2-web@latest/weights/segment-anything-2_quant.onnx',
-        encoderUrl: 'https://cdn.jsdelivr.net/npm/@roboflow/sam2-web@latest/weights/encoder_quant.onnx',
+        // URLs for the model files - using the Hiera Tiny models from mobilesam directory
+        modelUrl: './models/mobilesam/sam2_hiera_tiny.decoder.onnx',
+        encoderUrl: './models/mobilesam/sam2_hiera_tiny.encoder.ort',
         
         // Whether to use cache for models
         useCache: true,
         
         // Maximum dimensions for image processing
-        // Higher values = more accurate but slower
-        maxSize: 1024,
+        // Lower for Hiera Tiny model for better performance
+        maxSize: 768,
         
         // Whether to preload models on page load
         preload: false,
@@ -27,13 +26,18 @@ const SAM2_CONFIG = {
         backend: 'webgl',
         
         // Fallback to original SAM if SAM2 fails
-        fallbackToSAM: true
+        fallbackToSAM: true,
+        
+        // Hiera Tiny specific settings
+        modelArchitecture: 'hiera_tiny',
+        inputShape: [1, 3, 768, 768]
     },
     
     // Segmentation settings
     segmentation: {
         // Confidence threshold for the mask (0-1)
-        confidenceThreshold: 0.5,
+        // Hiera Tiny might need a lower threshold
+        confidenceThreshold: 0.35,
         
         // Maximum number of points to use for boundary extraction
         maxBoundaryPoints: 100,
@@ -49,7 +53,10 @@ const SAM2_CONFIG = {
         
         // Maximum time allowed for segmentation (ms)
         // If exceeded, will use fallback method
-        timeoutMs: 10000
+        timeoutMs: 10000,
+        
+        // Fall back to simulated polygon if all else fails
+        fallbackToSimulation: true
     },
     
     // UI settings
@@ -61,10 +68,10 @@ const SAM2_CONFIG = {
         showMetrics: true,
         
         // Default button text
-        buttonText: 'SAM2 Segmentation',
+        buttonText: 'SAM2 Tiny Segmentierung',
         
         // Button text when active
-        activeButtonText: 'Cancel SAM2',
+        activeButtonText: 'Abbrechen',
         
         // Custom styles
         buttonColor: '#3F51B5',
@@ -74,7 +81,7 @@ const SAM2_CONFIG = {
         showBadge: true,
         
         // Badge text
-        badgeText: 'SAM2'
+        badgeText: 'SAM2 Tiny'
     },
     
     // Debug settings
