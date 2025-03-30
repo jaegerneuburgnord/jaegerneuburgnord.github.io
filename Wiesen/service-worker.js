@@ -1,5 +1,5 @@
 // Ändere die Cache-Version, wenn du Updates bereitstellen möchtest
-const CACHE_VERSION = 64;
+const CACHE_VERSION = 65;
 const CACHE_NAME = `wiesen-karte-cache-v${CACHE_VERSION}`;
 const filesToCache = [
   './',
