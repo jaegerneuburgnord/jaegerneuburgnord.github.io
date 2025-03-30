@@ -152,9 +152,14 @@ async function performSegmentation(lat, lng) {
     const config = {
         useServerModel: false,  // true = Server-API verwenden, false = Browser-Modell verwenden
         serverEndpoint: 'https://api.example.com/segment-anything',
-        modelLoadPathEncoder: '../models/segment-anything-lite/mobilesam/sam2_hiera_tiny.encoder.onnx',
-        modelLoadPathDecoder: '../models/segment-anything-lite/mobilesam/sam2_hiera_tiny.decoder.onnx',
+        modelLoadPathEncoder: 'https://www.dropbox.com/scl/fi/fw9i0sgmrh594khn6o1ph/sam2_hiera_tiny.encoder.onnx?rlkey=qfgtbk04vp6gr33aiqbxdt8p3&st=xoc2tg2i&dl=1',
+        modelLoadPathDecoder: 'https://www.dropbox.com/scl/fi/vch64nhq2oh2a46p8jaze/sam2_hiera_tiny.decoder.onnx?rlkey=6jw1v8ikbczfczxferwvvz18t&st=xtpabeha&dl=1',
         simulateFallback: true // Simulation verwenden, wenn keine echte Implementierung verfügbar
+
+        // Decoder
+        // https://drive.google.com/uc?export=download&id=12cN1vyCm3Rlm3AA-aYw0j2q-WmGYMC1J
+
+
     };
     
     try {
