@@ -1,0 +1,313 @@
+/* styles.css - Angepasste Stile für die Wildkamera-App */
+
+:root {
+    --primary-color: #4CAF50;
+    --primary-light: #80e27e;
+    --primary-dark: #087f23;
+    --text-on-primary: #ffffff;
+    --accent-color: #E91E63;
+    --gray-light: #f5f5f5;
+    --gray-medium: #e0e0e0;
+    --gray-dark: #616161;
+}
+
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    background-color: var(--gray-light);
+    font-family: 'Roboto', sans-serif;
+}
+
+main {
+    flex: 1 0 auto;
+    padding: 10px 0;
+    margin-bottom: 60px; /* Platz für die untere Navigation */
+}
+
+/* Header und Navigation */
+nav {
+    background-color: var(--primary-color);
+}
+
+.nav-wrapper {
+    padding: 0 16px;
+}
+
+/* Kameras Liste */
+.camera-list-item {
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.camera-list-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.camera-list-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--gray-medium);
+}
+
+.camera-icon {
+    background-color: var(--primary-color);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.camera-icon i {
+    color: white;
+}
+
+.camera-info {
+    flex: 1;
+}
+
+.camera-name {
+    font-weight: 500;
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.camera-phone {
+    color: var(--accent-color);
+    margin: 4px 0 0 0;
+    font-size: 0.9rem;
+}
+
+.camera-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #00897B;
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+}
+
+.camera-actions {
+    display: flex;
+    padding: 8px 16px 12px 16px;
+    justify-content: space-between;
+}
+
+.camera-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.camera-action:hover {
+    background-color: var(--gray-light);
+}
+
+.action-icon {
+    color: var(--gray-dark);
+    font-size: 24px;
+}
+
+.camera-action-label {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    color: var(--gray-dark);
+}
+
+/* Buttons */
+.btn, .btn-large, .btn-floating {
+    background-color: var(--primary-color);
+}
+
+.btn:hover, .btn-large:hover, .btn-floating:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 56px;
+    display: flex;
+    background-color: white;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+
+.bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-dark);
+    text-decoration: none;
+}
+
+.bottom-nav-item.active {
+    color: var(--primary-color);
+}
+
+.bottom-nav-item i {
+    font-size: 24px;
+}
+
+.bottom-nav-label {
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Einstellungen und Modals */
+.modal {
+    border-radius: 8px;
+    max-height: 90%;
+}
+
+.modal .modal-footer {
+    padding: 4px 24px;
+}
+
+.tabs-container {
+    margin-bottom: 20px;
+}
+
+.tabs .tab a {
+    color: var(--primary-color);
+}
+
+.tabs .tab a:hover, .tabs .tab a.active {
+    color: var(--primary-dark);
+}
+
+.tabs .indicator {
+    background-color: var(--primary-dark);
+}
+
+.settings-panel {
+    padding: 15px;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.setting-label {
+    flex: 1;
+    font-weight: 500;
+}
+
+.setting-control {
+    flex: 1;
+}
+
+/* Switches */
+.switch label input[type=checkbox]:checked+.lever {
+    background-color: var(--primary-light);
+}
+
+.switch label input[type=checkbox]:checked+.lever:after {
+    background-color: var(--primary-color);
+}
+
+/* SMS Vorschau */
+.sms-preview {
+    background-color: #f1f8e9;
+    border: 1px solid #c5e1a5;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin: 15px 0;
+    font-family: monospace;
+    word-break: break-all;
+}
+
+.sms-preview-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--primary-dark);
+}
+
+/* Toast Benachrichtigungen */
+.toast-success {
+    background-color: var(--primary-color);
+}
+
+.toast-error {
+    background-color: #F44336;
+}
+
+/* Preloader */
+.preloader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
+
+/* Formularfelder */
+input:not([type]):focus:not([readonly]), 
+input[type=text]:not(.browser-default):focus:not([readonly]), 
+input[type=tel]:not(.browser-default):focus:not([readonly]),
+input[type=email]:not(.browser-default):focus:not([readonly]) {
+    border-bottom: 1px solid var(--primary-color);
+    box-shadow: 0 1px 0 0 var(--primary-color);
+}
+
+input:not([type]):focus:not([readonly])+label, 
+input[type=text]:not(.browser-default):focus:not([readonly])+label,
+input[type=tel]:not(.browser-default):focus:not([readonly])+label,
+input[type=email]:not(.browser-default):focus:not([readonly])+label {
+    color: var(--primary-color);
+}
+
+.select-wrapper input.select-dropdown:focus {
+    border-bottom: 1px solid var(--primary-color);
+}
+
+/* Responsive Anpassungen */
+@media only screen and (min-width: 601px) {
+    .camera-list-item {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .modal {
+        width: 80%;
+        max-width: 800px;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    .camera-actions {
+        flex-wrap: wrap;
+    }
+    
+    .camera-action {
+        flex-basis: 50%;
+        margin-bottom: 8px;
+    }
+    
+    .brand-logo {
+        font-size: 1.5rem !important;
+    }
+}

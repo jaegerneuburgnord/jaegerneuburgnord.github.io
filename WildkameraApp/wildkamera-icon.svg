@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Hintergrund -->
+  <circle cx="256" cy="256" r="256" fill="#4CAF50"/>
+  
+  <!-- Kamera-Körper -->
+  <rect x="112" y="156" width="288" height="200" rx="20" ry="20" fill="#37474F"/>
+  
+  <!-- Objektiv -->
+  <circle cx="256" cy="256" r="70" fill="#263238"/>
+  <circle cx="256" cy="256" r="60" fill="#455A64"/>
+  <circle cx="256" cy="256" r="50" fill="#607D8B"/>
+  <circle cx="256" cy="256" r="40" fill="#78909C"/>
+  <circle cx="256" cy="256" r="30" fill="#90A4AE"/>
+  
+  <!-- Blitz -->
+  <circle cx="350" cy="196" r="15" fill="#FFEB3B"/>
+  <circle cx="350" cy="196" r="10" fill="#FFF176"/>
+  
+  <!-- IR-Sensoren -->
+  <circle cx="162" cy="196" r="12" fill="#B71C1C"/>
+  <circle cx="162" cy="196" r="6" fill="#D32F2F"/>
+  
+  <circle cx="162" cy="236" r="12" fill="#B71C1C"/>
+  <circle cx="162" cy="236" r="6" fill="#D32F2F"/>
+  
+  <circle cx="162" cy="276" r="12" fill="#B71C1C"/>
+  <circle cx="162" cy="276" r="6" fill="#D32F2F"/>
+  
+  <!-- Auslöser-Knopf -->
+  <circle cx="400" cy="186" r="18" fill="#B0BEC5"/>
+  <circle cx="400" cy="186" r="14" fill="#78909C"/>
+  <circle cx="400" cy="186" r="10" fill="#90A4AE"/>
+  
+  <!-- SMS-Symbol -->
+  <g transform="translate(220, 325) scale(1.2)">
+    <rect x="-10" y="-10" width="90" height="70" rx="10" ry="10" fill="#E0F2F1" stroke="#004D40" stroke-width="4"/>
+    <path d="M0,0 L25,20 L50,0" fill="none" stroke="#004D40" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M-5,10 L15,25" fill="none" stroke="#004D40" stroke-width="4" stroke-linecap="round"/>
+    <path d="M55,10 L35,25" fill="none" stroke="#004D40" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Wildtier-Silhouette (Hirsch) -->
+  <path d="M350,320 L370,280 L390,310 L405,280 L410,310 L422,290 L427,310 L430,307 L435,330 L425,335 L420,350 L405,340 L390,350 L375,340 L360,350 L350,320" fill="#004D40"/>
+</svg>

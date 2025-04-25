@@ -1,0 +1,335 @@
+/* styles-extensions.css - Erweiterte Stile für die Wildkamera-App */
+
+/* ------ Filter- und Suchbereich ------ */
+.filter-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.search-field {
+    margin-bottom: 8px;
+}
+
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.filter-chip {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--gray-light);
+}
+
+.filter-chip.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.sort-control {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.empty-message {
+    padding: 30px;
+    background-color: white;
+    border-radius: 8px;
+    margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.empty-message i {
+    color: #ccc;
+    margin-bottom: 10px;
+}
+
+/* ------ Batch-Operationen ------ */
+.batch-action-bar {
+    position: fixed;
+    bottom: 70px;
+    left: 0;
+    right: 0;
+    background-color: var(--primary-dark);
+    color: white;
+    padding: 12px 16px;
+    z-index: 90;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.3s ease;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+}
+
+.batch-info {
+    display: flex;
+    align-items: center;
+}
+
+.batch-info i {
+    margin-right: 8px;
+}
+
+.batch-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.batch-action {
+    color: white;
+    border-radius: 4px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+}
+
+.batch-action:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+.batch-action i {
+    margin-right: 4px;
+}
+
+.batch-mode-toggle {
+    position: absolute;
+    right: 16px;
+    background-color: var(--accent-color) !important;
+}
+
+/* Kamera-Checkboxen im Batch-Modus */
+.batch-mode .camera-list-item {
+    position: relative;
+    padding-left: 40px;
+}
+
+.camera-checkbox {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--gray-light);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.batch-mode .camera-checkbox {
+    display: flex;
+}
+
+.camera-checkbox i {
+    font-size: 24px;
+    color: var(--gray-light);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.camera-list-item.selected .camera-checkbox {
+    background-color: var(--primary-color);
+}
+
+.camera-list-item.selected .camera-checkbox i {
+    color: white;
+    opacity: 1;
+}
+
+/* Batch-Ladeanimation */
+.batch-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* ------ Synchronisationsanzeige ------ */
+.sync-indicator {
+    position: fixed;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    padding: 12px 16px;
+    z-index: 95;
+    transition: opacity 0.3s ease;
+}
+
+.sync-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sync-content.success {
+    color: #4CAF50;
+}
+
+.sync-content.warning {
+    color: #FFC107;
+}
+
+.sync-content.error {
+    color: #F44336;
+}
+
+.sync-indicator.syncing .sync-content i {
+    animation: rotate 1.5s linear infinite;
+}
+
+.retry-btn {
+    background-color: var(--gray-light);
+    border-radius: 4px;
+    padding: 0 8px;
+    margin-left: 8px;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ------ Netzwerkstatusanzeige ------ */
+.network-status-indicator {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    border-radius: 8px;
+    padding: 8px 12px;
+    z-index: 95;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.status-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-content.online {
+    background-color: #E8F5E9;
+    color: #2E7D32;
+}
+
+.status-content.offline {
+    background-color: #FFEBEE;
+    color: #C62828;
+}
+
+.network-status-indicator.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Badge für ausstehende SMS */
+.pending-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: var(--accent-color);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ------ Einstellungsformular ------ */
+.highlight-setting {
+    animation: highlight 1s ease;
+}
+
+@keyframes highlight {
+    0% { background-color: transparent; }
+    30% { background-color: rgba(76, 175, 80, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.disabled-setting {
+    opacity: 0.5;
+    position: relative;
+}
+
+.disabled-setting::after {
+    content: "In dieser Kameraversion nicht verfügbar";
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: 10px;
+    color: var(--gray-dark);
+}
+
+/* SMS-Vorschau mit Längenwarnungen */
+.sms-length-indicator {
+    margin-top: 8px;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.length-ok {
+    background-color: #E8F5E9;
+    color: #2E7D32;
+}
+
+.length-warning {
+    background-color: #FFF3E0;
+    color: #E65100;
+}
+
+.length-error {
+    background-color: #FFEBEE;
+    color: #C62828;
+}
+
+/* ------ Drag-and-Drop-Sortierung ------ */
+.camera-list-item {
+    transition: all 0.2s ease;
+}
+
+.camera-list-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+}
+
+/* Responsive Anpassungen */
+@media only screen and (max-width: 600px) {
+    .filter-chips {
+        justify-content: space-between;
+    }
+    
+    .batch-action span {
+        display: none;
+    }
+    
+    .batch-action i {
+        margin-right: 0;
+    }
+    
+    .sync-indicator {
+        width: 90%;
+    }
+}
