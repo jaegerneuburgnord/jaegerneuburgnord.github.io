@@ -218,7 +218,7 @@
         <div class="header-content">
             <div>
                 <h4 class="header-title">Wildkamera Steuerung</h4>
-                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.06-232034</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.06-232953</div>
             </div>
             <ul id="nav-mobile" class="right">
                 <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
@@ -714,6 +714,26 @@
               }
           });
 
+          // ZUSÄTZLICH: Direkter Event-Listener auf Tab-Links (Fallback)
+          document.querySelectorAll('.main-tabs a[href="#map-tab"]').forEach(link => {
+              link.addEventListener('click', function() {
+                  console.log('Map tab link clicked directly');
+                  setTimeout(() => {
+                      if (!window.mapView.map) {
+                          console.log('Initializing map after tab click...');
+                          document.body.classList.add('map-tab-active');
+                          window.mapView.initMap('map');
+                          window.mapView.loadAllBoundaries();
+                          window.mapView.loadCameraMarkers();
+                          console.log('Map initialized:', window.mapView.map);
+                      } else {
+                          console.log('Map exists, invalidating size...');
+                          window.mapView.map.invalidateSize();
+                      }
+                  }, 200);
+              });
+          });
+
           // Initialize Settings Tabs
           M.Tabs.init(document.querySelectorAll('.tabs:not(.main-tabs)'));
 
@@ -743,14 +763,32 @@
 
           // Meine Position anzeigen
           document.getElementById('myLocationBtn').addEventListener('click', async () => {
-              if (!window.mapView.map) {
+              console.log('Position button clicked, map exists:', !!window.mapView.map);
+
+              // Prüfe ob wir im Karten-Tab sind
+              const mapTab = document.getElementById('map-tab');
+              const isMapTabVisible = mapTab && mapTab.style.display !== 'none';
+
+              if (!isMapTabVisible) {
                   M.toast({ html: 'Bitte wechseln Sie zum Karten-Tab', displayLength: 3000 });
                   return;
               }
+
+              // Initialisiere Karte falls noch nicht vorhanden
+              if (!window.mapView.map) {
+                  console.log('Initializing map for position...');
+                  document.body.classList.add('map-tab-active');
+                  window.mapView.initMap('map');
+                  await window.mapView.loadAllBoundaries();
+                  await window.mapView.loadCameraMarkers();
+                  console.log('Map initialized for position:', window.mapView.map);
+              }
+
               try {
                   await window.mapView.showCurrentLocation();
                   M.toast({ html: 'Position ermittelt', displayLength: 2000 });
               } catch (error) {
+                  console.error('Position error:', error);
                   M.toast({ html: 'Position konnte nicht ermittelt werden', displayLength: 4000 });
               }
           });
