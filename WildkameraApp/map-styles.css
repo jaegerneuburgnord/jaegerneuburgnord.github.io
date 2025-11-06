@@ -293,12 +293,14 @@
 
 /* Ensure map is properly sized in modal and tab */
 #map {
-    height: 100%;
     width: 100%;
+    min-height: 500px; /* Fallback minimum height */
 }
 
 .map-container {
     position: relative;
+    height: calc(100vh - 250px);
+    min-height: 500px;
 }
 
 /* Hide control panel initially if not on map tab */
