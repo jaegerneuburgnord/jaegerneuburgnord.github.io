@@ -2,7 +2,7 @@
  * service-worker.js
  * Service Worker für die Wildkamera SMS-Steuerung PWA mit detailliertem Debug-Logging
  */
-const CACHE_NAME = 'wildkamera-cache-v1.0.6';  // Versionsnummer erhöhen
+const CACHE_NAME = 'wildkamera-cache-v1.0.7';  // Versionsnummer erhöht nach Bugfixes
 const ASSETS = [
   '/',
   './index.html',
@@ -86,18 +86,29 @@ self.addEventListener('fetch', event => {
           return networkResponse;
         }
         // Bei Netzwerkfehler Cache verwenden
-        return caches.match(event.request);
+        return caches.match(event.request).then(cachedResponse => {
+          return cachedResponse || new Response('Nicht verfügbar', {
+            status: 503,
+            statusText: 'Service Unavailable'
+          });
+        });
       })
       .catch(() => {
         // Offline-Fallback
         return caches.match(event.request).then(cachedResponse => {
           if (cachedResponse) return cachedResponse;
-          
+
           // Spezifischer Offline-Fallback für Navigationen
           if (event.request.mode === 'navigate') {
-            return caches.match('/offline-html.html');
+            return caches.match('/offline-html.html').then(offline => {
+              return offline || new Response('Offline', {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'text/html' }
+              });
+            });
           }
-          
+
           // Generische Offline-Antwort
           return new Response('Offline und keine gecachte Version verfügbar.', {
             status: 503,
