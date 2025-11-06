@@ -218,7 +218,7 @@
         <div class="header-content">
             <div>
                 <h4 class="header-title">Wildkamera Steuerung</h4>
-                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.06-232953</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.06-233652</div>
             </div>
             <ul id="nav-mobile" class="right">
                 <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
@@ -279,6 +279,9 @@
                     </button>
                     <button id="syncKmlBtn" class="btn waves-effect waves-light">
                         <i class="material-icons left">sync</i>Sync
+                    </button>
+                    <button id="fullscreenBtn" class="btn waves-effect waves-light green">
+                        <i class="material-icons left">fullscreen</i>Vollbild
                     </button>
                 </div>
                 <input type="file" id="kmlFileInput" accept=".kml" style="display: none;">
@@ -661,6 +664,7 @@
     <script src="sms-manager.js"></script>
     <script src="kml-manager.js"></script>
     <script src="map-view.js"></script>
+    <script src="swipe-navigation.js"></script>
     <script src="layout-switcher.js"></script>
     <script src="offline-sync-manager.js"></script>
     <script src="sms-commands.js"></script>
@@ -886,6 +890,54 @@
                   document.getElementById('directSmsRadio').closest('p').style.display = 'block';
                   headerClickCount = 0;
               }
+          });
+
+          // Swipe-Navigation initialisieren
+          if (window.swipeNavigation) {
+              window.swipeNavigation.init();
+              console.log('Swipe navigation enabled: Swipe left/right to switch tabs');
+          }
+
+          // Vollbild-Toggle für Karte
+          let isFullscreen = false;
+          const toggleFullscreen = () => {
+              isFullscreen = !isFullscreen;
+              document.body.classList.toggle('map-fullscreen', isFullscreen);
+
+              // Button-Text und Icon aktualisieren
+              const fullscreenBtn = document.getElementById('fullscreenBtn');
+              if (fullscreenBtn) {
+                  if (isFullscreen) {
+                      fullscreenBtn.innerHTML = '<i class="material-icons left">fullscreen_exit</i>Normal';
+                      M.toast({ html: 'Vollbild aktiviert - Wischen zum Wechseln', displayLength: 2000 });
+                  } else {
+                      fullscreenBtn.innerHTML = '<i class="material-icons left">fullscreen</i>Vollbild';
+                      M.toast({ html: 'Vollbild deaktiviert', displayLength: 2000 });
+                  }
+              }
+
+              // Karte neu skalieren
+              if (window.mapView.map) {
+                  setTimeout(() => window.mapView.map.invalidateSize(), 100);
+              }
+          };
+
+          // Vollbild-Button Event
+          document.getElementById('fullscreenBtn')?.addEventListener('click', toggleFullscreen);
+
+          // Doppel-Tap auf Karte für Vollbild (optional)
+          let lastTap = 0;
+          document.getElementById('map-tab')?.addEventListener('touchend', (e) => {
+              const currentTime = new Date().getTime();
+              const tapLength = currentTime - lastTap;
+
+              if (tapLength < 300 && tapLength > 0) {
+                  // Doppel-Tap erkannt
+                  if (e.target.closest('#map')) {
+                      toggleFullscreen();
+                  }
+              }
+              lastTap = currentTime;
           });
         });
     </script>
