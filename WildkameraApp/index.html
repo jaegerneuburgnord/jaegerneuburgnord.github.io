@@ -681,6 +681,7 @@
           // Initialize Main Tabs
           const mainTabs = M.Tabs.init(document.querySelectorAll('.main-tabs'), {
               onShow: function(tab) {
+                  console.log('Tab onShow triggered:', tab.id);
                   // Wenn Karten-Tab geöffnet wird
                   if (tab.id === 'map-tab') {
                       // Zeige Tab
@@ -690,12 +691,15 @@
 
                       // Initialisiere Karte wenn noch nicht vorhanden
                       if (!window.mapView.map) {
+                          console.log('Initializing map for the first time...');
                           setTimeout(() => {
                               window.mapView.initMap('map');
                               window.mapView.loadAllBoundaries();
                               window.mapView.loadCameraMarkers();
+                              console.log('Map initialized:', window.mapView.map);
                           }, 100);
                       } else {
+                          console.log('Map already exists, invalidating size...');
                           // Leaflet Map invalidate size (wichtig nach Tab-Switch)
                           setTimeout(() => {
                               window.mapView.map.invalidateSize();
@@ -712,33 +716,6 @@
 
           // Initialize Settings Tabs
           M.Tabs.init(document.querySelectorAll('.tabs:not(.main-tabs)'));
-
-          // Check if map-first layout is active and initialize map
-          const currentLayout = window.layoutSwitcher.getCurrentLayout();
-          if (currentLayout === 'map-first') {
-              // In map-first layout, initialize map immediately
-              setTimeout(() => {
-                  if (!window.mapView.map) {
-                      window.mapView.initMap('map');
-                      window.mapView.loadAllBoundaries();
-                      window.mapView.loadCameraMarkers();
-                      document.body.classList.add('map-tab-active');
-                  }
-              }, 100);
-          } else {
-              // In tab layout, check if map tab is active
-              const mapTab = document.getElementById('map-tab');
-              if (mapTab && mapTab.style.display !== 'none') {
-                  setTimeout(() => {
-                      if (!window.mapView.map) {
-                          window.mapView.initMap('map');
-                          window.mapView.loadAllBoundaries();
-                          window.mapView.loadCameraMarkers();
-                          document.body.classList.add('map-tab-active');
-                      }
-                  }, 100);
-              }
-          }
 
           // KML-Upload Handler
           document.getElementById('uploadKmlBtn').addEventListener('click', () => {
@@ -844,6 +821,19 @@
           // Layout-Modus initialisieren
           const currentLayout = window.layoutSwitcher.getCurrentLayout();
           document.querySelector(`input[name="layoutMode"][value="${currentLayout}"]`).checked = true;
+
+          // Check if map-first layout is active and initialize map
+          if (currentLayout === 'map-first') {
+              // In map-first layout, initialize map immediately
+              setTimeout(() => {
+                  if (!window.mapView.map) {
+                      window.mapView.initMap('map');
+                      window.mapView.loadAllBoundaries();
+                      window.mapView.loadCameraMarkers();
+                      document.body.classList.add('map-tab-active');
+                  }
+              }, 100);
+          }
 
           // SMS-Modus initialisieren
           const directSmsEnabled = window.smsManager.isDirectSmsEnabled();
