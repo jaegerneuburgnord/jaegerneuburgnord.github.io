@@ -218,7 +218,7 @@
         <div class="header-content">
             <div>
                 <h4 class="header-title">Wildkamera Steuerung</h4>
-                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.06-235020</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.06-235841</div>
             </div>
             <ul id="nav-mobile" class="right">
                 <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
@@ -700,14 +700,50 @@
                       // Initialisiere Karte wenn noch nicht vorhanden
                       if (!window.mapView.map) {
                           console.log('Initializing map for the first time...');
-                          setTimeout(() => {
+                          setTimeout(async () => {
+                              // Synchronisiere Reviere-KMZ BEVOR Karte initialisiert wird
+                              if (navigator.onLine) {
+                                  try {
+                                      console.log('[Map Tab] Synchronisiere Reviere-KMZ...');
+                                      const syncResult = await window.kmlManager.syncReviere();
+                                      if (syncResult.success) {
+                                          console.log(`[Map Tab] Sync erfolgreich: ${syncResult.message}`);
+                                          if (syncResult.downloaded > 0) {
+                                              M.toast({ html: `✅ ${syncResult.downloaded} Reviere aktualisiert`, displayLength: 3000 });
+                                          }
+                                      }
+                                  } catch (error) {
+                                      console.error('[Map Tab] Sync fehlgeschlagen:', error);
+                                  }
+                              }
+
+                              // Dann Karte initialisieren
                               window.mapView.initMap('map');
-                              window.mapView.loadAllBoundaries();
-                              window.mapView.loadCameraMarkers();
+                              await window.mapView.loadAllBoundaries();
+                              await window.mapView.loadCameraMarkers();
                               console.log('Map initialized:', window.mapView.map);
                           }, 100);
                       } else {
                           console.log('Map already exists, invalidating size...');
+
+                          // Synchronisiere Reviere auch bei erneutem Öffnen
+                          if (navigator.onLine) {
+                              setTimeout(async () => {
+                                  try {
+                                      console.log('[Map Tab] Re-Sync Reviere-KMZ...');
+                                      const syncResult = await window.kmlManager.syncReviere();
+                                      if (syncResult.success && syncResult.downloaded > 0) {
+                                          console.log(`[Map Tab] Re-Sync: ${syncResult.message}`);
+                                          M.toast({ html: `✅ ${syncResult.downloaded} Reviere aktualisiert`, displayLength: 2000 });
+                                          // Karte neu laden wenn Updates vorhanden
+                                          await window.mapView.loadAllBoundaries();
+                                      }
+                                  } catch (error) {
+                                      console.error('[Map Tab] Re-Sync fehlgeschlagen:', error);
+                                  }
+                              }, 500);
+                          }
+
                           // Leaflet Map invalidate size (wichtig nach Tab-Switch)
                           setTimeout(() => {
                               window.mapView.map.invalidateSize();
@@ -726,13 +762,26 @@
           document.querySelectorAll('.main-tabs a[href="#map-tab"]').forEach(link => {
               link.addEventListener('click', function() {
                   console.log('Map tab link clicked directly');
-                  setTimeout(() => {
+                  setTimeout(async () => {
                       if (!window.mapView.map) {
                           console.log('Initializing map after tab click...');
+
+                          // Synchronisiere Reviere
+                          if (navigator.onLine) {
+                              try {
+                                  const syncResult = await window.kmlManager.syncReviere();
+                                  if (syncResult.success && syncResult.downloaded > 0) {
+                                      M.toast({ html: `✅ ${syncResult.downloaded} Reviere geladen`, displayLength: 2000 });
+                                  }
+                              } catch (error) {
+                                  console.error('Sync error:', error);
+                              }
+                          }
+
                           document.body.classList.add('map-tab-active');
                           window.mapView.initMap('map');
-                          window.mapView.loadAllBoundaries();
-                          window.mapView.loadCameraMarkers();
+                          await window.mapView.loadAllBoundaries();
+                          await window.mapView.loadCameraMarkers();
                           console.log('Map initialized:', window.mapView.map);
                       } else {
                           console.log('Map exists, invalidating size...');

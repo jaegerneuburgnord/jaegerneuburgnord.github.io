@@ -4,7 +4,7 @@ Unterstützt Wildkamera SMS-Kommandos
 """
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import logging
@@ -12,6 +12,10 @@ from datetime import datetime
 import asyncio
 import os
 import shutil
+import glob
+import hashlib
+import zipfile
+import io
 
 from sms_modem import SmsModem
 from settings_manager import SettingsManager
@@ -47,6 +51,9 @@ settings_manager: SettingsManager = SettingsManager()
 KML_UPLOAD_DIR = "kml_files"
 os.makedirs(KML_UPLOAD_DIR, exist_ok=True)
 
+# Reviere-Verzeichnis für automatische KMZ-Erkennung
+REVIERE_BASE_DIR = "/home/wildkamera/Reviere"
+
 # Pydantic Models für API
 class SmsRequest(BaseModel):
     phone_number: str
@@ -78,6 +85,82 @@ class SettingsResponse(BaseModel):
     success: bool
     message: str
     data: Optional[Dict[str, Any]] = None
+
+
+# ==================== Helper Functions ====================
+
+def calculate_file_hash(file_path: str) -> str:
+    """Berechnet MD5-Hash einer Datei für Änderungserkennung"""
+    hash_md5 = hashlib.md5()
+    try:
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+    except Exception as e:
+        logger.error(f"Fehler beim Hash-Berechnen von {file_path}: {e}")
+        return ""
+
+
+def scan_reviere_for_kmz() -> List[Dict[str, Any]]:
+    """
+    Durchsucht /home/wildkamera/Reviere zweistufig nach KMZ-Dateien:
+    1. Finde alle Ordner namens "kmz" oder "KMZ"
+    2. Suche in diesen Ordnern rekursiv nach .kmz Dateien
+
+    Returns:
+        Liste mit KMZ-Datei-Informationen
+    """
+    kmz_files = []
+
+    if not os.path.exists(REVIERE_BASE_DIR):
+        logger.warning(f"Reviere-Verzeichnis nicht gefunden: {REVIERE_BASE_DIR}")
+        return kmz_files
+
+    # Schritt 1: Finde alle "kmz" Ordner
+    kmz_folders = []
+    for root, dirs, files in os.walk(REVIERE_BASE_DIR):
+        for dir_name in dirs:
+            if dir_name.lower() == "kmz":
+                kmz_folder_path = os.path.join(root, dir_name)
+                kmz_folders.append(kmz_folder_path)
+                logger.debug(f"Gefundener KMZ-Ordner: {kmz_folder_path}")
+
+    logger.info(f"Gefundene KMZ-Ordner: {len(kmz_folders)}")
+
+    # Schritt 2: Durchsuche jeden KMZ-Ordner rekursiv nach .kmz Dateien
+    for kmz_folder in kmz_folders:
+        search_pattern = os.path.join(kmz_folder, "**", "*.kmz")
+        found_files = glob.glob(search_pattern, recursive=True)
+
+        logger.debug(f"In {kmz_folder}: {len(found_files)} KMZ-Dateien gefunden")
+
+        for file_path in found_files:
+            try:
+                # Extrahiere Revier-Namen aus Pfad
+                relative_path = os.path.relpath(file_path, REVIERE_BASE_DIR)
+                path_parts = relative_path.split(os.sep)
+                revier_name = path_parts[0] if len(path_parts) > 0 else "Unknown"
+
+                # Datei-Metadaten
+                file_stat = os.stat(file_path)
+                file_hash = calculate_file_hash(file_path)
+
+                kmz_files.append({
+                    "filename": os.path.basename(file_path),
+                    "revier": revier_name,
+                    "path": relative_path,
+                    "full_path": file_path,
+                    "size": file_stat.st_size,
+                    "modified": datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
+                    "hash": file_hash
+                })
+
+            except Exception as e:
+                logger.error(f"Fehler beim Verarbeiten von {file_path}: {e}")
+
+    logger.info(f"Gesamt gefundene KMZ-Dateien: {len(kmz_files)}")
+    return kmz_files
 
 
 @app.on_event("startup")
@@ -684,6 +767,209 @@ async def delete_kml(filename: str):
         raise HTTPException(
             status_code=500,
             detail=f"Fehler beim Löschen: {str(e)}"
+        )
+
+
+# ==================== Reviere KMZ Sync Endpoints ====================
+
+@app.get("/reviere/kmz/list")
+async def list_reviere_kmz():
+    """
+    Listet alle KMZ-Dateien aus /home/wildkamera/Reviere auf
+
+    Returns:
+        Liste aller gefundenen KMZ-Dateien mit Metadaten
+    """
+    try:
+        kmz_files = scan_reviere_for_kmz()
+
+        return {
+            "success": True,
+            "files": kmz_files,
+            "count": len(kmz_files),
+            "base_dir": REVIERE_BASE_DIR,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Fehler beim Scannen der Reviere: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fehler beim Scannen: {str(e)}"
+        )
+
+
+@app.get("/reviere/kmz/download")
+async def download_reviere_kmz(file_hash: str):
+    """
+    Lädt eine spezifische KMZ-Datei aus den Revieren herunter
+    Identifiziert die Datei anhand des Hash-Werts
+
+    Args:
+        file_hash: MD5-Hash der Datei
+
+    Returns:
+        KMZ-Datei als Byte-Stream
+    """
+    try:
+        kmz_files = scan_reviere_for_kmz()
+
+        # Finde Datei anhand Hash
+        target_file = None
+        for f in kmz_files:
+            if f["hash"] == file_hash:
+                target_file = f
+                break
+
+        if not target_file:
+            raise HTTPException(
+                status_code=404,
+                detail=f"KMZ-Datei mit Hash {file_hash} nicht gefunden"
+            )
+
+        file_path = target_file["full_path"]
+
+        if not os.path.exists(file_path):
+            raise HTTPException(
+                status_code=404,
+                detail="KMZ-Datei existiert nicht mehr"
+            )
+
+        # Lese Datei
+        with open(file_path, 'rb') as f:
+            file_content = f.read()
+
+        logger.info(f"KMZ-Datei heruntergeladen: {target_file['filename']} ({target_file['revier']})")
+
+        # Rückgabe als Binary Response
+        return Response(
+            content=file_content,
+            media_type="application/vnd.google-earth.kmz",
+            headers={
+                "Content-Disposition": f"attachment; filename={target_file['filename']}",
+                "X-Revier": target_file['revier'],
+                "X-File-Hash": file_hash
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Fehler beim Herunterladen der KMZ-Datei: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fehler beim Herunterladen: {str(e)}"
+        )
+
+
+@app.get("/reviere/kmz/extract")
+async def extract_kmz_to_kml(file_hash: str):
+    """
+    Extrahiert KML-Content aus einer KMZ-Datei
+
+    Args:
+        file_hash: MD5-Hash der KMZ-Datei
+
+    Returns:
+        Extrahierte KML-Inhalte als JSON
+    """
+    try:
+        kmz_files = scan_reviere_for_kmz()
+
+        # Finde Datei anhand Hash
+        target_file = None
+        for f in kmz_files:
+            if f["hash"] == file_hash:
+                target_file = f
+                break
+
+        if not target_file:
+            raise HTTPException(
+                status_code=404,
+                detail=f"KMZ-Datei mit Hash {file_hash} nicht gefunden"
+            )
+
+        file_path = target_file["full_path"]
+
+        # KMZ ist ein ZIP-Archiv mit KML drin
+        kml_content = None
+        with zipfile.ZipFile(file_path, 'r') as kmz:
+            # Suche nach .kml Datei im Archiv
+            kml_files = [f for f in kmz.namelist() if f.endswith('.kml')]
+
+            if not kml_files:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Keine KML-Datei im KMZ-Archiv gefunden"
+                )
+
+            # Nimm die erste KML-Datei
+            kml_filename = kml_files[0]
+            with kmz.open(kml_filename) as kml_file:
+                kml_content = kml_file.read().decode('utf-8')
+
+        logger.info(f"KML aus KMZ extrahiert: {target_file['filename']}")
+
+        return {
+            "success": True,
+            "filename": target_file["filename"],
+            "revier": target_file["revier"],
+            "kml_content": kml_content,
+            "hash": file_hash
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Fehler beim Extrahieren der KML: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fehler beim Extrahieren: {str(e)}"
+        )
+
+
+@app.post("/reviere/kmz/sync")
+async def sync_reviere_kmz(client_hashes: List[str] = []):
+    """
+    Synchronisiert KMZ-Dateien zwischen Server und Client
+
+    Args:
+        client_hashes: Liste von Hashes, die der Client bereits hat
+
+    Returns:
+        Liste von Dateien, die aktualisiert werden müssen
+    """
+    try:
+        server_files = scan_reviere_for_kmz()
+        server_hashes = {f["hash"]: f for f in server_files}
+
+        # Finde Dateien, die der Client noch nicht hat oder die aktualisiert wurden
+        files_to_update = []
+        for file_hash, file_info in server_hashes.items():
+            if file_hash not in client_hashes:
+                files_to_update.append(file_info)
+
+        # Finde Dateien, die der Client hat, aber auf dem Server nicht mehr existieren
+        files_to_delete = []
+        for client_hash in client_hashes:
+            if client_hash not in server_hashes:
+                files_to_delete.append(client_hash)
+
+        logger.info(f"Sync: {len(files_to_update)} zu aktualisieren, {len(files_to_delete)} zu löschen")
+
+        return {
+            "success": True,
+            "files_to_update": files_to_update,
+            "files_to_delete": files_to_delete,
+            "total_server_files": len(server_files),
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Fehler beim Sync: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fehler beim Sync: {str(e)}"
         )
 
 
