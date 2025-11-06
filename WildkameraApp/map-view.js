@@ -369,6 +369,9 @@ class MapView {
 
                 this.boundaryLayers[layerName] = layerGroup;
 
+                // Automatisch zur Karte hinzufügen und anzeigen
+                layerGroup.addTo(this.map);
+
                 // Add checkbox to control panel
                 if (layerCheckboxContainer) {
                     const layerItem = document.createElement('div');
@@ -378,7 +381,7 @@ class MapView {
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = `layer-${layerName}`;
-                    checkbox.checked = false;
+                    checkbox.checked = true; // Standardmäßig angezeigt
 
                     checkbox.addEventListener('change', () => {
                         if (checkbox.checked) {
@@ -394,6 +397,14 @@ class MapView {
                     layerItem.appendChild(label);
                     layerCheckboxContainer.appendChild(layerItem);
                 }
+            }
+
+            // Auto-Zoom auf alle Boundaries wenn vorhanden
+            if (boundaryCount > 0) {
+                setTimeout(() => {
+                    this.fitBoundaries();
+                    console.log(`Auto-zoomed to ${boundaryCount} boundaries`);
+                }, 200);
             }
 
             return boundaryCount;
@@ -669,6 +680,7 @@ class MapView {
     /**
      * Add camera markers to map
      * @param {Array} cameras - Array of camera objects with lat, lng, name
+     * @returns {Promise<number>} - Anzahl der geladenen Kameras
      */
     async loadCameraMarkers() {
         try {
@@ -686,11 +698,15 @@ class MapView {
                 cameraListContainer.innerHTML = '';
             }
 
+            let cameraCount = 0;
+
             for (const camera of cameras) {
                 // Skip cameras without location
                 if (!camera.location || !camera.location.lat || !camera.location.lng) {
                     continue;
                 }
+
+                cameraCount++;
 
                 // Create camera marker
                 const cameraIcon = L.divIcon({
@@ -740,9 +756,34 @@ class MapView {
                     marker.addTo(this.map);
                 }
             }
+
+            // Auto-Zoom auf Kameras wenn keine Boundaries vorhanden
+            if (cameraCount > 0 && Object.keys(this.boundaryLayers).length === 0) {
+                setTimeout(() => {
+                    this.fitCameraMarkers();
+                    console.log(`Auto-zoomed to ${cameraCount} cameras (no boundaries found)`);
+                }, 200);
+            }
+
+            return cameraCount;
         } catch (error) {
             console.error('Error loading camera markers:', error);
+            return 0;
         }
+    }
+
+    /**
+     * Zoomt die Karte auf alle sichtbaren Kamera-Marker
+     */
+    fitCameraMarkers() {
+        const markers = Object.values(this.cameraMarkers);
+        if (markers.length === 0) return;
+
+        const group = L.featureGroup(markers);
+        this.map.fitBounds(group.getBounds(), {
+            padding: [50, 50],
+            maxZoom: 15
+        });
     }
 
     /**
