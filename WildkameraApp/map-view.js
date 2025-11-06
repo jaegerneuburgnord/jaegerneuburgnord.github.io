@@ -16,6 +16,8 @@ class MapView {
         this.watchId = null;
         this.isLocating = false;
         this.cameraMarkers = {};
+        this.baseLayers = {};  // Verschiedene Karten-Layer
+        this.currentLayer = null;  // Aktuell aktiver Layer
     }
 
     /**
@@ -33,13 +35,40 @@ class MapView {
         const mapOptions = { ...defaultOptions, ...options };
 
         // Leaflet-Karte erstellen
-        this.map = L.map(containerId).setView(mapOptions.center, mapOptions.zoom);
+        this.map = L.map(containerId, { zoomControl: false }).setView(mapOptions.center, mapOptions.zoom);
 
-        // OpenStreetMap Tiles (offline-fähig wenn gecacht)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: mapOptions.maxZoom
-        }).addTo(this.map);
+        // Zoom Control rechts positionieren
+        L.control.zoom({ position: 'topright' }).addTo(this.map);
+
+        // Verschiedene Karten-Layer definieren
+        this.baseLayers = {
+            'OpenStreetMap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            }),
+            'Google Satellite': L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                attribution: '© Google',
+                maxZoom: 20
+            }),
+            'Google Hybrid': L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                attribution: '© Google',
+                maxZoom: 20
+            }),
+            'Bing Satellite': L.tileLayer('https://ecn.t{s}.tiles.virtualearth.net/tiles/a{q}?g=1', {
+                attribution: '© Microsoft Bing',
+                maxZoom: 19,
+                subdomains: ['0', '1', '2', '3']
+            }),
+            'Bayern Atlas': L.tileLayer('https://geoservices.bayern.de/wmts/v1/ogc_dop80_oa/default/smerc/{z}/{y}/{x}?format=image/jpeg', {
+                attribution: '© Bayerische Vermessungsverwaltung',
+                maxZoom: 20
+            })
+        };
+
+        // Standard-Layer hinzufügen (OpenStreetMap)
+        const savedLayer = localStorage.getItem('selectedMapLayer') || 'OpenStreetMap';
+        this.currentLayer = this.baseLayers[savedLayer] || this.baseLayers['OpenStreetMap'];
+        this.currentLayer.addTo(this.map);
 
         // Layer für Marker
         this.markersLayer = L.layerGroup().addTo(this.map);
@@ -51,9 +80,6 @@ class MapView {
 
         // Initialize control panel
         this.initControlPanel();
-
-        // Initialize search
-        this.initSearch();
 
         return this.map;
     }
@@ -72,38 +98,22 @@ class MapView {
         controlPanel.className = 'map-control-panel';
         controlPanel.innerHTML = `
             <div class="map-control-header">
-                <span>Karten-Steuerung</span>
+                <span>Karteneinstellungen</span>
                 <i class="material-icons toggle-icon">expand_more</i>
             </div>
             <div class="map-control-content">
-                <div class="map-search-container">
-                    <input type="text" class="map-search-input" placeholder="Suche nach Ort oder Gebiet...">
-                    <div class="map-search-results"></div>
+                <div class="map-layer-section">
+                    <div class="map-section-header">
+                        <span>Karten-Ansicht</span>
+                        <i class="material-icons">expand_less</i>
+                    </div>
+                    <div class="map-layer-items" id="mapLayerSelector"></div>
                 </div>
 
                 <div class="map-button-container">
-                    <button class="btn-small waves-effect waves-light" id="toggleAllLayersBtn">
-                        <i class="material-icons left">layers</i>Alle anzeigen
-                    </button>
-                    <button class="btn-small waves-effect waves-light" id="toggleLocationBtn">
+                    <button class="btn-small waves-effect waves-light green" id="toggleLocationBtn">
                         <i class="material-icons left">my_location</i>Standort
                     </button>
-                </div>
-
-                <div class="map-layer-section">
-                    <div class="map-section-header">
-                        <span>Verfügbare Ebenen</span>
-                        <i class="material-icons">expand_less</i>
-                    </div>
-                    <div class="map-layer-items" id="mapLayerCheckboxes"></div>
-                </div>
-
-                <div class="map-layer-section">
-                    <div class="map-section-header">
-                        <span>Kameras</span>
-                        <i class="material-icons">expand_less</i>
-                    </div>
-                    <div class="map-layer-items" id="mapCameraList"></div>
                 </div>
             </div>
         `;
@@ -134,16 +144,8 @@ class MapView {
             });
         });
 
-        // Toggle all layers button
-        const toggleAllBtn = document.getElementById('toggleAllLayersBtn');
-        let allVisible = false;
-        toggleAllBtn.addEventListener('click', () => {
-            allVisible = !allVisible;
-            this.toggleAllLayers(allVisible);
-            toggleAllBtn.innerHTML = allVisible ?
-                '<i class="material-icons left">layers_clear</i>Alle ausblenden' :
-                '<i class="material-icons left">layers</i>Alle anzeigen';
-        });
+        // Layer-Selector befüllen
+        this.populateLayerSelector();
 
         // Location button
         const locationBtn = document.getElementById('toggleLocationBtn');
@@ -153,7 +155,59 @@ class MapView {
     }
 
     /**
-     * Initialisiert die Suchfunktion
+     * Befüllt den Layer-Selector mit verfügbaren Karten
+     */
+    populateLayerSelector() {
+        const layerSelector = document.getElementById('mapLayerSelector');
+        if (!layerSelector) return;
+
+        const savedLayer = localStorage.getItem('selectedMapLayer') || 'OpenStreetMap';
+
+        Object.keys(this.baseLayers).forEach(layerName => {
+            const layerItem = document.createElement('div');
+            layerItem.className = 'map-layer-item';
+
+            const label = document.createElement('label');
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'baseLayer';
+            radio.id = `layer-${layerName}`;
+            radio.value = layerName;
+            radio.checked = layerName === savedLayer;
+
+            radio.addEventListener('change', () => {
+                this.switchBaseLayer(layerName);
+            });
+
+            label.appendChild(radio);
+            label.appendChild(document.createTextNode(` ${layerName}`));
+            layerItem.appendChild(label);
+            layerSelector.appendChild(layerItem);
+        });
+    }
+
+    /**
+     * Wechselt den Basis-Layer
+     */
+    switchBaseLayer(layerName) {
+        if (this.currentLayer) {
+            this.map.removeLayer(this.currentLayer);
+        }
+
+        this.currentLayer = this.baseLayers[layerName];
+        this.currentLayer.addTo(this.map);
+
+        // Speichere Auswahl
+        localStorage.setItem('selectedMapLayer', layerName);
+
+        console.log('Switched to layer:', layerName);
+        if (typeof M !== 'undefined' && M.toast) {
+            M.toast({ html: `Karte gewechselt zu: ${layerName}`, displayLength: 2000 });
+        }
+    }
+
+    /**
+     * Initialisiert die Suchfunktion (deprecated - wird nicht mehr verwendet)
      */
     initSearch() {
         const searchInput = document.querySelector('.map-search-input');
