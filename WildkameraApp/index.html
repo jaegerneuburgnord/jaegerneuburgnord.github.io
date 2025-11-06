@@ -216,7 +216,10 @@
 <body>
     <header>
         <div class="header-content">
-            <h4 class="header-title">Wildkamera Steuerung</h4>
+            <div>
+                <h4 class="header-title">Wildkamera Steuerung</h4>
+                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2024.11.06-2</div>
+            </div>
             <ul id="nav-mobile" class="right">
                 <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
                 <li><a id="installButton" class="hide" href="#" title="App installieren"><i class="material-icons">get_app</i></a></li>
@@ -709,6 +712,33 @@
 
           // Initialize Settings Tabs
           M.Tabs.init(document.querySelectorAll('.tabs:not(.main-tabs)'));
+
+          // Check if map-first layout is active and initialize map
+          const currentLayout = window.layoutSwitcher.getCurrentLayout();
+          if (currentLayout === 'map-first') {
+              // In map-first layout, initialize map immediately
+              setTimeout(() => {
+                  if (!window.mapView.map) {
+                      window.mapView.initMap('map');
+                      window.mapView.loadAllBoundaries();
+                      window.mapView.loadCameraMarkers();
+                      document.body.classList.add('map-tab-active');
+                  }
+              }, 100);
+          } else {
+              // In tab layout, check if map tab is active
+              const mapTab = document.getElementById('map-tab');
+              if (mapTab && mapTab.style.display !== 'none') {
+                  setTimeout(() => {
+                      if (!window.mapView.map) {
+                          window.mapView.initMap('map');
+                          window.mapView.loadAllBoundaries();
+                          window.mapView.loadCameraMarkers();
+                          document.body.classList.add('map-tab-active');
+                      }
+                  }, 100);
+              }
+          }
 
           // KML-Upload Handler
           document.getElementById('uploadKmlBtn').addEventListener('click', () => {
