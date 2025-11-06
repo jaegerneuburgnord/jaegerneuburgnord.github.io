@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sudo usb_modeswitch:*)",
+      "Read(//usr/share/usb_modeswitch/**)",
+      "Bash(dpkg:*)",
+      "Bash(cat:*)",
+      "Bash(sudo tar:*)",
+      "Bash(dmesg:*)",
+      "Bash(udevadm info:*)",
+      "Read(//etc/udev/rules.d/**)",
+      "Bash(sudo udevadm test:*)",
+      "Bash(journalctl:*)",
+      "Bash(sudo udevadm trigger:*)",
+      "Bash(lsusb:*)",
+      "Bash(systemctl status:*)",
+      "Read(//usr/lib/udev/**)",
+      "Read(//usr/lib/systemd/system/**)",
+      "Read(//lib/systemd/system/**)",
+      "Bash(chmod:*)",
+      "Bash(sudo dmesg:*)",
+      "Read(//dev/**)",
+      "Bash(sudo cp:*)",
+      "Bash(sudo chmod:*)",
+      "Read(//etc/usb_modeswitch.d/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

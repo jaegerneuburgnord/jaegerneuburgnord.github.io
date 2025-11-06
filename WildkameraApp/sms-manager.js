@@ -7,6 +7,28 @@ class SmsManager {
     constructor() {
         // Referenz zur Datenbank
         this.dbManager = window.dbManager;
+        // Referenz zum API-Client
+        this.apiClient = window.apiClient;
+        // Direkter SMS-Versand (verstecktes Feature)
+        this.useDirectSms = localStorage.getItem('useDirectSms') === 'true';
+    }
+
+    /**
+     * Aktiviert/Deaktiviert direkten SMS-Versand (verstecktes Feature)
+     * @param {boolean} enabled - true für direkten Versand
+     */
+    setDirectSmsMode(enabled) {
+        this.useDirectSms = enabled;
+        localStorage.setItem('useDirectSms', enabled ? 'true' : 'false');
+        console.log(`Direkter SMS-Versand: ${enabled ? 'aktiviert' : 'deaktiviert'}`);
+    }
+
+    /**
+     * Prüft ob direkter SMS-Versand aktiviert ist
+     * @returns {boolean}
+     */
+    isDirectSmsEnabled() {
+        return this.useDirectSms;
     }
 
     /**
@@ -14,41 +36,96 @@ class SmsManager {
      * @param {string} phoneNumber - Zieltelefonnummer
      * @param {string} message - SMS-Nachrichtentext
      * @param {string} cameraId - ID der Kamera (für Offline-Speicherung)
-     * @returns {Promise<boolean>} - true bei Erfolg, false bei Misserfolg
+     * @returns {Promise<Object>} - {success: boolean, method: string, message: string}
      */
     async sendSms(phoneNumber, message, cameraId) {
         // Online-Status prüfen
         if (!navigator.onLine) {
             // Wenn offline, SMS zur späteren Verarbeitung speichern
             await this.savePendingSms(phoneNumber, message, cameraId);
-            return false;
+            return {
+                success: false,
+                method: 'offline',
+                message: 'Offline - SMS für späteren Versand gespeichert'
+            };
         }
 
         try {
-            // Versuchen, SMS zu senden
-            const success = await this.trySendSms(phoneNumber, message);
-            
-            if (!success) {
-                // Bei Misserfolg trotz Online-Status, in Queue speichern
-                await this.savePendingSms(phoneNumber, message, cameraId);
+            // Wenn direkter SMS-Versand aktiviert ist, Browser-SMS verwenden
+            if (this.useDirectSms) {
+                console.log('Verwende direkten SMS-Versand (Browser)');
+                const success = await this.trySendSmsDirect(phoneNumber, message);
+
+                if (!success) {
+                    await this.savePendingSms(phoneNumber, message, cameraId);
+                }
+
+                return {
+                    success: success,
+                    method: 'direct',
+                    message: success ? 'SMS über Browser versendet' : 'Browser-SMS fehlgeschlagen'
+                };
             }
-            
-            return success;
+
+            // Standard: Versuche SMS über Server-API zu senden
+            console.log('Verwende Server-API für SMS-Versand');
+            const response = await this.apiClient.sendSms(phoneNumber, message, cameraId);
+
+            if (response.success) {
+                return {
+                    success: true,
+                    method: 'api',
+                    message: 'SMS erfolgreich über Server versendet',
+                    timestamp: response.timestamp
+                };
+            } else {
+                // Bei Misserfolg in Queue speichern
+                await this.savePendingSms(phoneNumber, message, cameraId);
+                return {
+                    success: false,
+                    method: 'api',
+                    message: response.message || 'SMS-Versand fehlgeschlagen'
+                };
+            }
+
         } catch (error) {
-            console.error('Fehler beim Senden der SMS:', error);
+            console.error('Fehler beim Senden der SMS über API:', error);
+
+            // Bei API-Fehler: Fallback auf direkten Versand wenn aktiviert
+            // oder in Queue speichern
+            if (this.useDirectSms) {
+                console.log('API fehlgeschlagen, versuche direkten Versand');
+                try {
+                    const success = await this.trySendSmsDirect(phoneNumber, message);
+                    if (success) {
+                        return {
+                            success: true,
+                            method: 'direct-fallback',
+                            message: 'SMS über Browser versendet (Fallback)'
+                        };
+                    }
+                } catch (directError) {
+                    console.error('Auch direkter Versand fehlgeschlagen:', directError);
+                }
+            }
+
             // Bei Fehler in Queue speichern
             await this.savePendingSms(phoneNumber, message, cameraId);
-            return false;
+            return {
+                success: false,
+                method: 'failed',
+                message: `Fehler: ${error.message}`
+            };
         }
     }
 
     /**
-     * Versucht, eine SMS über verschiedene Methoden zu senden
+     * Versucht, eine SMS direkt über Browser-APIs zu senden
      * @param {string} phoneNumber - Zieltelefonnummer
      * @param {string} message - SMS-Nachrichtentext
      * @returns {Promise<boolean>} - true bei Erfolg
      */
-    async trySendSms(phoneNumber, message) {
+    async trySendSmsDirect(phoneNumber, message) {
         // Versuch 1: Web SMS API verwenden (falls unterstützt)
         if ('sms' in navigator && typeof navigator.sms.send === 'function') {
             try {
@@ -203,11 +280,11 @@ class SmsManager {
                     
                     // Versuch erhöhen
                     sms.attempts++;
-                    
-                    // SMS senden
-                    const success = await this.trySendSms(sms.phoneNumber, sms.message);
-                    
-                    if (success) {
+
+                    // SMS senden (über API oder direkt)
+                    const result = await this.sendSms(sms.phoneNumber, sms.message, sms.cameraId);
+
+                    if (result.success) {
                         // Bei Erfolg aus der Datenbank entfernen
                         await this.dbManager.deletePendingSMS(sms.id);
                         successCount++;

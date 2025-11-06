@@ -1,0 +1,327 @@
+/**
+ * map-styles.css
+ * Styling für die verbesserte Kartenansicht mit WiesenApp-Features
+ */
+
+/* Map Control Panel - Floating Panel */
+.map-control-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: white;
+    border-radius: 8px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 80vh;
+    overflow: hidden;
+    width: 320px;
+    transition: all 0.3s ease;
+}
+
+.map-control-header {
+    background: #4CAF50;
+    color: white;
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    font-weight: 500;
+}
+
+.map-control-header:hover {
+    background: #45a049;
+}
+
+.map-control-header .toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.map-control-content {
+    padding: 15px;
+    max-height: calc(80vh - 50px);
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+}
+
+.map-control-content.collapsed {
+    max-height: 0;
+    padding: 0 15px;
+}
+
+/* Search Container */
+.map-search-container {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.map-search-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.map-search-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.map-search-results {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 8px;
+}
+
+.map-search-result-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.map-search-result-item:hover {
+    background-color: #f5f5f5;
+}
+
+.map-search-result-item i {
+    margin-right: 10px;
+    color: #4CAF50;
+    font-size: 20px;
+}
+
+.map-search-result-item.map-place-result i {
+    color: #2196F3;
+}
+
+.map-search-result-item.map-search-loading {
+    font-style: italic;
+    color: #777;
+    cursor: default;
+}
+
+.map-search-divider {
+    padding: 8px 12px;
+    font-weight: 500;
+    color: #666;
+    background: #f9f9f9;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Button Container */
+.map-button-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.map-button-container button {
+    flex: 1;
+    font-size: 12px;
+}
+
+.map-button-container .material-icons {
+    font-size: 16px;
+}
+
+/* Layer Sections */
+.map-layer-section {
+    margin-bottom: 15px;
+}
+
+.map-section-header {
+    background: #f5f5f5;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.map-section-header:hover {
+    background: #eeeeee;
+}
+
+.map-section-header i {
+    font-size: 20px;
+    color: #666;
+}
+
+.map-layer-items {
+    padding-left: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+}
+
+.map-layer-items.collapsed {
+    max-height: 0;
+    overflow: hidden;
+}
+
+.map-layer-item {
+    margin: 8px 0;
+}
+
+.map-layer-item label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.map-layer-item input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.map-camera-item {
+    padding: 4px 0;
+}
+
+.map-camera-item:hover {
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+/* Spin animation for GPS tracking */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 2s linear infinite;
+}
+
+/* User Location Marker */
+.user-location-marker {
+    background: transparent;
+}
+
+/* Camera Marker */
+.camera-marker {
+    background: transparent;
+}
+
+/* Scrollbar styling for webkit browsers */
+.map-search-results::-webkit-scrollbar,
+.map-layer-items::-webkit-scrollbar,
+.map-control-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.map-search-results::-webkit-scrollbar-track,
+.map-layer-items::-webkit-scrollbar-track,
+.map-control-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.map-search-results::-webkit-scrollbar-thumb,
+.map-layer-items::-webkit-scrollbar-thumb,
+.map-control-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.map-search-results::-webkit-scrollbar-thumb:hover,
+.map-layer-items::-webkit-scrollbar-thumb:hover,
+.map-control-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .map-control-panel {
+        width: calc(100vw - 20px);
+        max-width: 320px;
+    }
+
+    .map-control-content {
+        max-height: calc(70vh - 50px);
+    }
+
+    .map-button-container {
+        flex-direction: column;
+    }
+
+    .map-button-container button {
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .map-control-panel {
+        top: 5px;
+        left: 5px;
+        width: calc(100vw - 10px);
+    }
+
+    .map-control-header {
+        font-size: 14px;
+        padding: 10px 12px;
+    }
+
+    .map-search-input {
+        font-size: 13px;
+        padding: 8px 10px;
+    }
+
+    .map-layer-item label {
+        font-size: 13px;
+    }
+}
+
+/* Map First Layout - Camera Sidebar (from original WildkameraApp) */
+.camera-sidebar .map-layer-item {
+    margin: 0;
+}
+
+/* Ensure map is properly sized in modal and tab */
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+.map-container {
+    position: relative;
+}
+
+/* Hide control panel initially if not on map tab */
+body:not(.map-tab-active) .map-control-panel {
+    display: none;
+}
+
+/* Hide old map controls when new control panel is active */
+.map-tab-active .map-controls {
+    display: none;
+}
+
+/* Leaflet popup customization */
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+}
+
+.leaflet-popup-content {
+    margin: 12px 16px;
+    font-size: 14px;
+}
+
+/* Leaflet control attribution positioning fix */
+.leaflet-bottom.leaflet-right {
+    z-index: 999;
+}

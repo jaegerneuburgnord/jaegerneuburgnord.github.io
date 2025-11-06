@@ -1,0 +1,4 @@
+# Udev rule for Huawei E3372 modem - automatically switches from storage to modem mode
+# This rule uses the usb_modeswitch dispatcher script which handles the switching properly
+
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="14dc", RUN+="usb_modeswitch '%b/%k'"

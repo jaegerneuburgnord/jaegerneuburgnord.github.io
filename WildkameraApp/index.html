@@ -7,50 +7,288 @@
     <meta name="theme-color" content="#4CAF50">
     <title>Wildkamera SMS‑Steuerung</title> <!-- Materialize CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"> <!-- Google Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> <!-- PWA Manifest & Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /> <!-- PWA Manifest & Icons -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png"> <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="styles-extensions.css">
+    <link rel="stylesheet" href="map-styles.css">
     <style>
         /* Banner mit Wald‑Silhouette */
-        header{height:120px;background:url('icons/forest-silhouette.png') center/cover no-repeat;position:relative}
-        header::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.4)}
+        header {
+            height: 120px;
+            background: url('icons/forest-silhouette.png') center/cover no-repeat, #4CAF50;
+            position: relative;
+        }
+        header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,.4);
+            pointer-events: none;
+        }
+        .header-content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            height: 100%;
+        }
+        .header-title {
+            color: white;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-size: 28px;
+        }
+        #nav-mobile {
+            display: flex;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            gap: 10px;
+        }
+        #nav-mobile li {
+            display: inline-block;
+        }
+        #nav-mobile li a {
+            color: white;
+            font-size: 28px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+        }
+        #nav-mobile li a:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
         .navbar-fixed .nav-wrapper{background:transparent;box-shadow:none;position:relative}
         .tabs-container{margin-top:16px}
+
+        /* Fullscreen Modal für Karte */
+        .modal.modal-fullscreen {
+            width: 95% !important;
+            height: 95% !important;
+            max-height: 95% !important;
+            top: 2.5% !important;
+        }
+
+        .modal.modal-fullscreen .modal-content {
+            height: calc(100% - 56px);
+            padding: 0;
+        }
+
+        /* Map-Container */
+        #map {
+            z-index: 1;
+        }
+
+        /* Leaflet Attribution fix für Modal */
+        .leaflet-control-attribution {
+            font-size: 10px;
+        }
+
+        /* Verstecktes Feature initial ausblenden */
+        #directSmsRadio:not(:checked) {
+            display: none;
+        }
+
+        #directSmsRadio + span {
+            display: none;
+        }
+
+        /* Main Tabs Styling */
+        .main-tabs {
+            background-color: #4CAF50;
+            margin-bottom: 0;
+        }
+
+        .main-tabs .tab a {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .main-tabs .tab a:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .main-tabs .tab a.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .main-tabs .indicator {
+            background-color: white;
+        }
+
+        /* Tab Content Container */
+        .tab-content-container {
+            min-height: calc(100vh - 200px);
+        }
+
+        /* Map Container */
+        .map-container {
+            height: calc(100vh - 250px);
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* Map Controls */
+        .map-controls {
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .map-controls button {
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+
+        /* Leaflet fix for tab switching */
+        #map-tab .leaflet-container {
+            height: 100%;
+        }
+
+        /* Map-First Layout Styles */
+        .map-first-layout #map-tab {
+            position: relative;
+        }
+
+        .camera-sidebar {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            width: 300px;
+            max-height: calc(100vh - 300px);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .camera-sidebar .sidebar-header {
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .camera-sidebar .sidebar-header h6 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .camera-sidebar .sidebar-content {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .camera-sidebar .collection {
+            margin: 0;
+            border: none;
+        }
+
+        .camera-sidebar .collection-item {
+            cursor: pointer;
+            font-size: 14px;
+            padding: 10px 15px;
+        }
+
+        .camera-sidebar .collection-item:hover {
+            background: #f5f5f5;
+        }
+
+        /* Responsive Sidebar */
+        @media (max-width: 768px) {
+            .camera-sidebar {
+                width: 250px;
+            }
+        }
     </style>
 </head>
 
 <body>
     <header>
-        <ul id="nav-mobile" class="right">
-            <li><a id="installButton" class="hide" href="#"><i class="material-icons">get_app</i></a></li>
-        </ul>
+        <div class="header-content">
+            <h4 class="header-title">Wildkamera Steuerung</h4>
+            <ul id="nav-mobile" class="right">
+                <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
+                <li><a id="installButton" class="hide" href="#" title="App installieren"><i class="material-icons">get_app</i></a></li>
+            </ul>
+        </div>
     </header>
     <main>
+        <!-- Tab Navigation -->
+        <div class="row" style="margin-bottom: 0;">
+            <div class="col s12">
+                <ul class="tabs main-tabs">
+                    <li class="tab col s6"><a href="#cameras-tab" class="active">Kameras</a></li>
+                    <li class="tab col s6"><a href="#map-tab">Karte</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tab Contents -->
         <div class="container main-container">
-            <div class="row">
-                <div id="cameraListContainer" class="col s12">
-                    <ul id="cameraList" class="collection"></ul>
-                    <div id="loadingIndicator" class="preloader-container hide">
-                        <div class="preloader-wrapper small active">
-                            <div class="spinner-layer spinner-green-only">
-                                <div class="circle-clipper left">
-                                    <div class="circle"></div>
-                                </div>
-                                <div class="gap-patch">
-                                    <div class="circle"></div>
-                                </div>
-                                <div class="circle-clipper right">
-                                    <div class="circle"></div>
+            <!-- Kameras Tab -->
+            <div id="cameras-tab" class="tab-content-container">
+                <div class="row">
+                    <div id="cameraListContainer" class="col s12">
+                        <ul id="cameraList" class="collection"></ul>
+                        <div id="loadingIndicator" class="preloader-container hide">
+                            <div class="preloader-wrapper small active">
+                                <div class="spinner-layer spinner-green-only">
+                                    <div class="circle-clipper left">
+                                        <div class="circle"></div>
+                                    </div>
+                                    <div class="gap-patch">
+                                        <div class="circle"></div>
+                                    </div>
+                                    <div class="circle-clipper right">
+                                        <div class="circle"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="fixed-action-btn add-button">
+                    <a id="addCameraButton" class="btn-floating btn-large waves-effect waves-light">
+                        <i class="material-icons">add</i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Karte Tab -->
+            <div id="map-tab" class="tab-content-container" style="display: none;">
+                <div class="map-controls">
+                    <button id="uploadKmlBtn" class="btn waves-effect waves-light">
+                        <i class="material-icons left">upload_file</i>KML Upload
+                    </button>
+                    <button id="myLocationBtn" class="btn waves-effect waves-light">
+                        <i class="material-icons left">my_location</i>Position
+                    </button>
+                    <button id="syncKmlBtn" class="btn waves-effect waves-light">
+                        <i class="material-icons left">sync</i>Sync
+                    </button>
+                </div>
+                <input type="file" id="kmlFileInput" accept=".kml" style="display: none;">
+                <div id="map" class="map-container"></div>
             </div>
         </div>
-        <div class="fixed-action-btn add-button"> <a id="addCameraButton" class="btn-floating btn-large waves-effect waves-light"><i class="material-icons">add</i></a> </div>
     </main> <!-- Batch‑Action‑Bar -->
     <div id="batchActionBar" class="batch-action-bar hide"> <span id="batchCount">0 Kameras ausgewählt</span>
         <div class="batch-actions center-align"> <i class="material-icons batch-action" data-action="settings">settings</i> <i class="material-icons batch-action" data-action="rename">edit</i> <i class="material-icons batch-action" data-action="photo">photo</i> <i class="material-icons batch-action" data-action="delete">delete</i> </div>
@@ -347,7 +585,69 @@
               <a id="sendSettingsButton" class="waves-effect waves-light btn" href="#">SMS senden</a>
             </div>
           </div>
-        </div> <!-- Scripts -->
+        </div>
+
+    <!-- Server-Konfigurations Modal -->
+    <div id="serverConfigModal" class="modal">
+        <div class="modal-content">
+            <h4>Server-Konfiguration</h4>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="serverUrl" type="text" class="validate" placeholder="http://localhost:8000">
+                    <label for="serverUrl">Server-URL</label>
+                </div>
+                <div class="col s12">
+                    <button id="testConnectionBtn" class="btn waves-effect waves-light">
+                        <i class="material-icons left">wifi</i>Verbindung testen
+                    </button>
+                    <span id="connectionStatus" style="margin-left: 20px;"></span>
+                </div>
+                <div class="col s12" style="margin-top: 20px;">
+                    <h6>App-Layout</h6>
+                    <p>
+                        <label>
+                            <input type="radio" name="layoutMode" value="tabs" checked />
+                            <span>Tab-Layout (Kameras / Karte)</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="radio" name="layoutMode" value="map-first" />
+                            <span>Karte als Startseite (mit Kamera-Sidebar)</span>
+                        </label>
+                    </p>
+                </div>
+                <div class="col s12" style="margin-top: 20px;">
+                    <h6>SMS-Versand Modus</h6>
+                    <p>
+                        <label>
+                            <input type="radio" name="smsMode" value="api" checked />
+                            <span>Server-API (Standard)</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="radio" name="smsMode" value="direct" id="directSmsRadio" />
+                            <span>Direkter Browser-SMS (Fallback)</span>
+                        </label>
+                    </p>
+                </div>
+                <div class="col s12" style="margin-top: 20px;">
+                    <h6>Server-Status</h6>
+                    <div id="serverStatusInfo" style="padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                        <p id="serverStatus">Status wird geladen...</p>
+                        <p id="modemStatus">Modem: Nicht verbunden</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-light btn-flat">Schließen</a>
+            <a id="saveServerConfigBtn" href="#!" class="waves-effect waves-light btn">Speichern</a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
 	<script>
 	  if ('serviceWorker' in navigator) {
 		window.addEventListener('load', () => {
@@ -358,9 +658,14 @@
 	</script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="config.js"></script>
     <script src="db-manager.js"></script>
+    <script src="api-client.js"></script>
     <script src="sms-manager.js"></script>
+    <script src="kml-manager.js"></script>
+    <script src="map-view.js"></script>
+    <script src="layout-switcher.js"></script>
     <script src="offline-sync-manager.js"></script>
     <script src="sms-commands.js"></script>
     <script src="app.js"></script>
@@ -369,9 +674,168 @@
     <script src="sync-manager.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded',()=>{
-          M.Tabs.init(document.querySelectorAll('.tabs'));
+          // Initialize Layout based on preference
+          window.layoutSwitcher.initLayout();
+
+          // Initialize Materialize components
           M.FormSelect.init(document.querySelectorAll('select'));
           M.Timepicker.init(document.querySelectorAll('.timepicker'),{i18n:{cancel:'Abbrechen'}});
+          M.Modal.init(document.querySelectorAll('.modal'));
+
+          // Initialize Main Tabs
+          const mainTabs = M.Tabs.init(document.querySelectorAll('.main-tabs'), {
+              onShow: function(tab) {
+                  // Wenn Karten-Tab geöffnet wird
+                  if (tab.id === 'map-tab') {
+                      // Zeige Tab
+                      document.getElementById('map-tab').style.display = 'block';
+                      document.getElementById('cameras-tab').style.display = 'none';
+                      document.body.classList.add('map-tab-active');
+
+                      // Initialisiere Karte wenn noch nicht vorhanden
+                      if (!window.mapView.map) {
+                          setTimeout(() => {
+                              window.mapView.initMap('map');
+                              window.mapView.loadAllBoundaries();
+                              window.mapView.loadCameraMarkers();
+                          }, 100);
+                      } else {
+                          // Leaflet Map invalidate size (wichtig nach Tab-Switch)
+                          setTimeout(() => {
+                              window.mapView.map.invalidateSize();
+                              window.mapView.loadCameraMarkers();
+                          }, 100);
+                      }
+                  } else if (tab.id === 'cameras-tab') {
+                      document.getElementById('cameras-tab').style.display = 'block';
+                      document.getElementById('map-tab').style.display = 'none';
+                      document.body.classList.remove('map-tab-active');
+                  }
+              }
+          });
+
+          // Initialize Settings Tabs
+          M.Tabs.init(document.querySelectorAll('.tabs:not(.main-tabs)'));
+
+          // KML-Upload Handler
+          document.getElementById('uploadKmlBtn').addEventListener('click', () => {
+              document.getElementById('kmlFileInput').click();
+          });
+
+          document.getElementById('kmlFileInput').addEventListener('change', async (e) => {
+              const file = e.target.files[0];
+              if (file) {
+                  try {
+                      const result = await window.kmlManager.uploadKml(file);
+                      M.toast({ html: result.message, displayLength: 4000 });
+
+                      // Karte neu laden
+                      if (window.mapView.map) {
+                          await window.mapView.loadAllBoundaries();
+                      }
+                  } catch (error) {
+                      M.toast({ html: `Fehler: ${error.message}`, displayLength: 4000 });
+                  }
+                  // Reset input
+                  e.target.value = '';
+              }
+          });
+
+          // Meine Position anzeigen
+          document.getElementById('myLocationBtn').addEventListener('click', async () => {
+              if (!window.mapView.map) {
+                  M.toast({ html: 'Bitte wechseln Sie zum Karten-Tab', displayLength: 3000 });
+                  return;
+              }
+              try {
+                  await window.mapView.showCurrentLocation();
+                  M.toast({ html: 'Position ermittelt', displayLength: 2000 });
+              } catch (error) {
+                  M.toast({ html: 'Position konnte nicht ermittelt werden', displayLength: 4000 });
+              }
+          });
+
+          // KML-Sync
+          document.getElementById('syncKmlBtn').addEventListener('click', async () => {
+              M.toast({ html: 'Synchronisiere KML-Dateien...', displayLength: 2000 });
+              const result = await window.kmlManager.syncWithServer();
+              M.toast({ html: result.message, displayLength: 4000 });
+
+              // Karte neu laden wenn vorhanden
+              if (window.mapView.map) {
+                  await window.mapView.loadAllBoundaries();
+              }
+          });
+
+          // Server-Konfiguration
+          const serverUrl = localStorage.getItem('smsServerUrl') || 'http://localhost:8000';
+          document.getElementById('serverUrl').value = serverUrl;
+
+          // Test-Verbindung
+          document.getElementById('testConnectionBtn').addEventListener('click', async () => {
+              const url = document.getElementById('serverUrl').value;
+              window.apiClient.setServerUrl(url);
+
+              const statusSpan = document.getElementById('connectionStatus');
+              statusSpan.innerHTML = '<i class="material-icons tiny">hourglass_empty</i> Teste...';
+
+              const connected = await window.apiClient.testConnection();
+
+              if (connected) {
+                  statusSpan.innerHTML = '<i class="material-icons tiny green-text">check_circle</i> Verbunden';
+
+                  // Hole Server-Status
+                  const status = await window.apiClient.getStatus();
+                  document.getElementById('serverStatus').textContent = `Status: ${status.status}`;
+                  document.getElementById('modemStatus').textContent = `Modem: ${status.modem_connected ? 'Verbunden' : 'Nicht verbunden'}`;
+              } else {
+                  statusSpan.innerHTML = '<i class="material-icons tiny red-text">error</i> Nicht erreichbar';
+              }
+          });
+
+          // Server-Konfiguration speichern
+          document.getElementById('saveServerConfigBtn').addEventListener('click', () => {
+              const url = document.getElementById('serverUrl').value;
+              window.apiClient.setServerUrl(url);
+
+              // Layout-Modus
+              const layoutMode = document.querySelector('input[name="layoutMode"]:checked').value;
+              if (layoutMode === 'map-first') {
+                  window.layoutSwitcher.switchToMapFirstLayout();
+              } else {
+                  window.layoutSwitcher.switchToTabLayout();
+              }
+
+              // SMS-Modus
+              const smsMode = document.querySelector('input[name="smsMode"]:checked').value;
+              window.smsManager.setDirectSmsMode(smsMode === 'direct');
+
+              M.toast({ html: 'Konfiguration gespeichert - Seite wird neu geladen...', displayLength: 2000 });
+
+              // Seite neu laden um Layout anzuwenden
+              setTimeout(() => {
+                  location.reload();
+              }, 2000);
+          });
+
+          // Layout-Modus initialisieren
+          const currentLayout = window.layoutSwitcher.getCurrentLayout();
+          document.querySelector(`input[name="layoutMode"][value="${currentLayout}"]`).checked = true;
+
+          // SMS-Modus initialisieren
+          const directSmsEnabled = window.smsManager.isDirectSmsEnabled();
+          document.querySelector(`input[name="smsMode"][value="${directSmsEnabled ? 'direct' : 'api'}"]`).checked = true;
+
+          // Easter Egg für verstecktes Feature: 10x auf Header klicken
+          let headerClickCount = 0;
+          document.querySelector('header').addEventListener('click', () => {
+              headerClickCount++;
+              if (headerClickCount >= 10) {
+                  M.toast({ html: 'Direkter SMS-Modus freigeschaltet!', displayLength: 4000 });
+                  document.getElementById('directSmsRadio').closest('p').style.display = 'block';
+                  headerClickCount = 0;
+              }
+          });
         });
     </script>
 </body>

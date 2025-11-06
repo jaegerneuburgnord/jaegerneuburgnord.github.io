@@ -1,0 +1,4 @@
+# Huawei E3372 (HiLink mode)
+TargetVendor=0x12d1
+TargetProduct=0x1506
+HuaweiNewMode=1

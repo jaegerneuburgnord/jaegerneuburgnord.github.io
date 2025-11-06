@@ -1,0 +1,740 @@
+/**
+ * map-view.js
+ * Kartendarstellung für Reviergrenzen mit Offline-Unterstützung
+ * Erweitert mit WiesenApp-Features: Layer-Management, Suche, Location-Tracking
+ */
+
+class MapView {
+    constructor() {
+        this.map = null;
+        this.kmlManager = window.kmlManager;
+        this.boundaryLayers = {};  // Changed to object for named layers
+        this.markersLayer = null;
+        this.searchIndex = [];
+        this.userMarker = null;
+        this.accuracyCircle = null;
+        this.watchId = null;
+        this.isLocating = false;
+        this.cameraMarkers = {};
+    }
+
+    /**
+     * Initialisiert die Karte
+     * @param {string} containerId - ID des Container-Elements
+     * @param {Object} options - Karten-Optionen
+     */
+    initMap(containerId, options = {}) {
+        const defaultOptions = {
+            center: [51.1657, 10.4515], // Deutschland Zentrum
+            zoom: 6,
+            maxZoom: 18
+        };
+
+        const mapOptions = { ...defaultOptions, ...options };
+
+        // Leaflet-Karte erstellen
+        this.map = L.map(containerId).setView(mapOptions.center, mapOptions.zoom);
+
+        // OpenStreetMap Tiles (offline-fähig wenn gecacht)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: mapOptions.maxZoom
+        }).addTo(this.map);
+
+        // Layer für Marker
+        this.markersLayer = L.layerGroup().addTo(this.map);
+
+        // Event-Listener für Karten-Clicks
+        this.map.on('click', (e) => {
+            console.log(`Koordinaten: ${e.latlng.lat}, ${e.latlng.lng}`);
+        });
+
+        // Initialize control panel
+        this.initControlPanel();
+
+        // Initialize search
+        this.initSearch();
+
+        return this.map;
+    }
+
+    /**
+     * Initialisiert das Control-Panel
+     */
+    initControlPanel() {
+        // Check if control panel already exists
+        if (document.getElementById('map-control-panel')) {
+            return;
+        }
+
+        const controlPanel = document.createElement('div');
+        controlPanel.id = 'map-control-panel';
+        controlPanel.className = 'map-control-panel';
+        controlPanel.innerHTML = `
+            <div class="map-control-header">
+                <span>Karten-Steuerung</span>
+                <i class="material-icons toggle-icon">expand_more</i>
+            </div>
+            <div class="map-control-content">
+                <div class="map-search-container">
+                    <input type="text" class="map-search-input" placeholder="Suche nach Ort oder Gebiet...">
+                    <div class="map-search-results"></div>
+                </div>
+
+                <div class="map-button-container">
+                    <button class="btn-small waves-effect waves-light" id="toggleAllLayersBtn">
+                        <i class="material-icons left">layers</i>Alle anzeigen
+                    </button>
+                    <button class="btn-small waves-effect waves-light" id="toggleLocationBtn">
+                        <i class="material-icons left">my_location</i>Standort
+                    </button>
+                </div>
+
+                <div class="map-layer-section">
+                    <div class="map-section-header">
+                        <span>Verfügbare Ebenen</span>
+                        <i class="material-icons">expand_less</i>
+                    </div>
+                    <div class="map-layer-items" id="mapLayerCheckboxes"></div>
+                </div>
+
+                <div class="map-layer-section">
+                    <div class="map-section-header">
+                        <span>Kameras</span>
+                        <i class="material-icons">expand_less</i>
+                    </div>
+                    <div class="map-layer-items" id="mapCameraList"></div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(controlPanel);
+
+        // Toggle panel
+        const header = controlPanel.querySelector('.map-control-header');
+        const content = controlPanel.querySelector('.map-control-content');
+        const toggleIcon = header.querySelector('.toggle-icon');
+
+        header.addEventListener('click', () => {
+            content.classList.toggle('collapsed');
+            toggleIcon.textContent = content.classList.contains('collapsed') ?
+                'expand_less' : 'expand_more';
+        });
+
+        // Section toggles
+        const sectionHeaders = controlPanel.querySelectorAll('.map-section-header');
+        sectionHeaders.forEach(header => {
+            const icon = header.querySelector('i');
+            const content = header.nextElementSibling;
+
+            header.addEventListener('click', () => {
+                content.classList.toggle('collapsed');
+                icon.textContent = content.classList.contains('collapsed') ?
+                    'expand_more' : 'expand_less';
+            });
+        });
+
+        // Toggle all layers button
+        const toggleAllBtn = document.getElementById('toggleAllLayersBtn');
+        let allVisible = false;
+        toggleAllBtn.addEventListener('click', () => {
+            allVisible = !allVisible;
+            this.toggleAllLayers(allVisible);
+            toggleAllBtn.innerHTML = allVisible ?
+                '<i class="material-icons left">layers_clear</i>Alle ausblenden' :
+                '<i class="material-icons left">layers</i>Alle anzeigen';
+        });
+
+        // Location button
+        const locationBtn = document.getElementById('toggleLocationBtn');
+        locationBtn.addEventListener('click', () => {
+            this.toggleLocationTracking();
+        });
+    }
+
+    /**
+     * Initialisiert die Suchfunktion
+     */
+    initSearch() {
+        const searchInput = document.querySelector('.map-search-input');
+        const searchResults = document.querySelector('.map-search-results');
+
+        if (!searchInput || !searchResults) return;
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            searchResults.innerHTML = '';
+
+            if (query.length < 2) {
+                return;
+            }
+
+            // Suche nach Features
+            const featureResults = this.searchIndex.filter(item =>
+                item.name.toLowerCase().includes(query) ||
+                (item.description && item.description.toLowerCase().includes(query))
+            );
+
+            featureResults.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'map-search-result-item';
+                resultItem.innerHTML = `<i class="material-icons">place</i> ${result.name}`;
+                resultItem.addEventListener('click', () => {
+                    // Show layer
+                    const checkbox = document.getElementById(`layer-${result.parentLayer}`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        this.boundaryLayers[result.parentLayer].addTo(this.map);
+                    }
+
+                    // Zoom to feature
+                    this.map.fitBounds(result.layer.getBounds());
+                    result.layer.openPopup();
+
+                    searchInput.value = '';
+                    searchResults.innerHTML = '';
+                });
+
+                searchResults.appendChild(resultItem);
+            });
+
+            // Ortssuche über Photon API
+            if (query.length >= 3) {
+                const searchingItem = document.createElement('div');
+                searchingItem.className = 'map-search-result-item map-search-loading';
+                searchingItem.innerHTML = '<i class="material-icons">search</i> Suche nach Orten...';
+                searchResults.appendChild(searchingItem);
+
+                fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=de`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const loadingItem = document.querySelector('.map-search-loading');
+                        if (loadingItem) loadingItem.remove();
+
+                        if (data.features && data.features.length > 0) {
+                            if (featureResults.length > 0) {
+                                const divider = document.createElement('div');
+                                divider.className = 'map-search-divider';
+                                divider.textContent = 'Orte';
+                                searchResults.appendChild(divider);
+                            }
+
+                            data.features.forEach(place => {
+                                const props = place.properties;
+                                const coords = place.geometry.coordinates;
+
+                                const resultItem = document.createElement('div');
+                                resultItem.className = 'map-search-result-item map-place-result';
+
+                                let displayName = props.name || '';
+                                if (props.street) displayName += ', ' + props.street;
+                                if (props.city) displayName += ', ' + props.city;
+
+                                resultItem.innerHTML = `<i class="material-icons">location_on</i> ${displayName}`;
+                                resultItem.addEventListener('click', () => {
+                                    this.map.setView([coords[1], coords[0]], 15);
+
+                                    const marker = L.marker([coords[1], coords[0]])
+                                        .addTo(this.map)
+                                        .bindPopup(displayName)
+                                        .openPopup();
+
+                                    setTimeout(() => this.map.removeLayer(marker), 60000);
+
+                                    searchInput.value = '';
+                                    searchResults.innerHTML = '';
+                                });
+
+                                searchResults.appendChild(resultItem);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fehler bei der Ortssuche:', error);
+                        const loadingItem = document.querySelector('.map-search-loading');
+                        if (loadingItem) {
+                            loadingItem.innerHTML = '<i class="material-icons">error</i> Fehler bei der Ortssuche';
+                            loadingItem.style.color = 'red';
+                        }
+                    });
+            }
+        });
+    }
+
+    /**
+     * Lädt und zeigt alle KML-Reviergrenzen an
+     * @returns {Promise<number>} - Anzahl geladener Grenzen
+     */
+    async loadAllBoundaries() {
+        try {
+            // Entferne bestehende Boundary-Layer
+            this.clearBoundaries();
+
+            // Hole alle KML-Dateien
+            const kmlFiles = await this.kmlManager.getAllKmlLocal();
+
+            let boundaryCount = 0;
+            const layerCheckboxContainer = document.getElementById('mapLayerCheckboxes');
+
+            if (layerCheckboxContainer) {
+                layerCheckboxContainer.innerHTML = '';
+            }
+
+            for (const kmlFile of kmlFiles) {
+                const layerName = kmlFile.name;
+                const polygons = this.kmlManager.parseKmlCoordinates(kmlFile.content);
+
+                // Create layer group
+                const layerGroup = L.layerGroup();
+                const color = this.getRandomColor();
+
+                for (const polygon of polygons) {
+                    const latLngs = polygon.coordinates.map(coord => [coord[1], coord[0]]);
+                    const leafletPolygon = L.polygon(latLngs, {
+                        color: color,
+                        weight: 2,
+                        fillOpacity: 0.2
+                    });
+
+                    if (polygon.name) {
+                        leafletPolygon.bindPopup(`<b>${polygon.name}</b>`);
+                    }
+
+                    layerGroup.addLayer(leafletPolygon);
+
+                    // Add to search index
+                    this.searchIndex.push({
+                        name: polygon.name || 'Unbenannt',
+                        description: '',
+                        layer: leafletPolygon,
+                        parentLayer: layerName
+                    });
+
+                    boundaryCount++;
+                }
+
+                this.boundaryLayers[layerName] = layerGroup;
+
+                // Add checkbox to control panel
+                if (layerCheckboxContainer) {
+                    const layerItem = document.createElement('div');
+                    layerItem.className = 'map-layer-item';
+
+                    const label = document.createElement('label');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `layer-${layerName}`;
+                    checkbox.checked = false;
+
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            layerGroup.addTo(this.map);
+                            this.map.fitBounds(layerGroup.getBounds());
+                        } else {
+                            this.map.removeLayer(layerGroup);
+                        }
+                    });
+
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(` ${layerName}`));
+                    layerItem.appendChild(label);
+                    layerCheckboxContainer.appendChild(layerItem);
+                }
+            }
+
+            return boundaryCount;
+
+        } catch (error) {
+            console.error('Fehler beim Laden der Reviergrenzen:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Toggle all layers on/off
+     * @param {boolean} show - True to show all, false to hide all
+     */
+    toggleAllLayers(show) {
+        for (const [name, layer] of Object.entries(this.boundaryLayers)) {
+            const checkbox = document.getElementById(`layer-${name}`);
+            if (checkbox) {
+                checkbox.checked = show;
+                if (show) {
+                    layer.addTo(this.map);
+                } else {
+                    this.map.removeLayer(layer);
+                }
+            }
+        }
+
+        if (show && Object.keys(this.boundaryLayers).length > 0) {
+            this.fitBoundaries();
+        }
+    }
+
+    /**
+     * Fügt eine Reviergrenze zur Karte hinzu
+     * @param {Array} coordinates - Array von [lng, lat] Koordinaten
+     * @param {string} name - Name der Grenze
+     * @param {Object} options - Polygon-Optionen
+     */
+    addBoundary(coordinates, name, options = {}) {
+        // Leaflet erwartet [lat, lng], KML hat [lng, lat]
+        const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+
+        const defaultOptions = {
+            color: '#FF6B6B',
+            weight: 2,
+            fillOpacity: 0.2
+        };
+
+        const polygonOptions = { ...defaultOptions, ...options };
+
+        const polygon = L.polygon(latLngs, polygonOptions).addTo(this.map);
+
+        // Popup mit Name
+        if (name) {
+            polygon.bindPopup(`<b>${name}</b>`);
+        }
+
+        this.boundaryLayers.push(polygon);
+
+        return polygon;
+    }
+
+    /**
+     * Entfernt alle Reviergrenzen
+     */
+    clearBoundaries() {
+        for (const [name, layer] of Object.entries(this.boundaryLayers)) {
+            if (this.map.hasLayer(layer)) {
+                this.map.removeLayer(layer);
+            }
+        }
+        this.boundaryLayers = {};
+        this.searchIndex = [];
+    }
+
+    /**
+     * Zoomt auf alle Reviergrenzen
+     */
+    fitBoundaries() {
+        if (Object.keys(this.boundaryLayers).length === 0) return;
+
+        const allLayers = [];
+        for (const layer of Object.values(this.boundaryLayers)) {
+            if (this.map.hasLayer(layer)) {
+                allLayers.push(layer);
+            }
+        }
+
+        if (allLayers.length > 0) {
+            const group = L.featureGroup(allLayers);
+            this.map.fitBounds(group.getBounds(), {
+                padding: [50, 50]
+            });
+        }
+    }
+
+    /**
+     * Fügt einen Marker zur Karte hinzu (z.B. für Kamera-Position)
+     * @param {number} lat - Breitengrad
+     * @param {number} lng - Längengrad
+     * @param {Object} options - Marker-Optionen
+     * @returns {Object} - Leaflet Marker
+     */
+    addMarker(lat, lng, options = {}) {
+        const marker = L.marker([lat, lng], options).addTo(this.markersLayer);
+
+        if (options.popup) {
+            marker.bindPopup(options.popup);
+        }
+
+        return marker;
+    }
+
+    /**
+     * Entfernt alle Marker
+     */
+    clearMarkers() {
+        this.markersLayer.clearLayers();
+    }
+
+    /**
+     * Zentriert die Karte auf eine Position
+     * @param {number} lat - Breitengrad
+     * @param {number} lng - Längengrad
+     * @param {number} zoom - Zoom-Level
+     */
+    centerOn(lat, lng, zoom = 13) {
+        this.map.setView([lat, lng], zoom);
+    }
+
+    /**
+     * Toggle Location Tracking
+     */
+    toggleLocationTracking() {
+        if (this.isLocating) {
+            this.stopLocationTracking();
+        } else {
+            this.startLocationTracking();
+        }
+    }
+
+    /**
+     * Start continuous location tracking
+     */
+    startLocationTracking() {
+        if (this.watchId) return;
+
+        const locationBtn = document.getElementById('toggleLocationBtn');
+        if (locationBtn) {
+            locationBtn.innerHTML = '<i class="material-icons left spin">gps_fixed</i>Tracking...';
+        }
+
+        this.watchId = navigator.geolocation.watchPosition(
+            (position) => this.updateLocation(position),
+            (error) => {
+                console.warn('Geolocation error:', error);
+                M.toast({ html: 'Standortermittlung fehlgeschlagen', displayLength: 3000 });
+                this.stopLocationTracking();
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        );
+
+        this.isLocating = true;
+    }
+
+    /**
+     * Stop location tracking
+     */
+    stopLocationTracking() {
+        if (this.watchId !== null) {
+            navigator.geolocation.clearWatch(this.watchId);
+            this.watchId = null;
+        }
+
+        if (this.userMarker) {
+            this.map.removeLayer(this.userMarker);
+            this.userMarker = null;
+        }
+
+        if (this.accuracyCircle) {
+            this.map.removeLayer(this.accuracyCircle);
+            this.accuracyCircle = null;
+        }
+
+        this.isLocating = false;
+
+        const locationBtn = document.getElementById('toggleLocationBtn');
+        if (locationBtn) {
+            locationBtn.innerHTML = '<i class="material-icons left">my_location</i>Standort';
+        }
+    }
+
+    /**
+     * Update location on map
+     * @param {GeolocationPosition} position
+     */
+    updateLocation(position) {
+        const { latitude: lat, longitude: lng, accuracy } = position.coords;
+
+        // Remove old markers
+        if (this.userMarker) this.map.removeLayer(this.userMarker);
+        if (this.accuracyCircle) this.map.removeLayer(this.accuracyCircle);
+
+        // Add accuracy circle
+        this.accuracyCircle = L.circle([lat, lng], {
+            radius: accuracy,
+            color: '#4CAF50',
+            fillColor: '#4CAF50',
+            fillOpacity: 0.15,
+            weight: 1
+        }).addTo(this.map);
+
+        // Add user marker
+        const markerIcon = L.divIcon({
+            className: 'user-location-marker',
+            html: '<div style="background: #4CAF50; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+
+        this.userMarker = L.marker([lat, lng], {
+            icon: markerIcon,
+            zIndexOffset: 1000
+        }).addTo(this.map);
+
+        // Zoom to location if not already zoomed
+        if (this.map.getZoom() < 16) {
+            this.map.setView([lat, lng], 17);
+        }
+    }
+
+    /**
+     * Zeigt die aktuelle Position des Benutzers (einmalig)
+     * @returns {Promise<Object>} - Position {lat, lng}
+     */
+    async showCurrentLocation() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation nicht unterstützt'));
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    // Marker für aktuelle Position
+                    const marker = this.addMarker(lat, lng, {
+                        popup: 'Ihre Position',
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    });
+
+                    marker.openPopup();
+                    this.centerOn(lat, lng);
+
+                    resolve({ lat, lng });
+                },
+                (error) => {
+                    reject(error);
+                }
+            );
+        });
+    }
+
+    /**
+     * Add camera markers to map
+     * @param {Array} cameras - Array of camera objects with lat, lng, name
+     */
+    async loadCameraMarkers() {
+        try {
+            // Clear existing camera markers
+            for (const marker of Object.values(this.cameraMarkers)) {
+                this.map.removeLayer(marker);
+            }
+            this.cameraMarkers = {};
+
+            // Get cameras from database
+            const cameras = await window.dbManager.getAllCameras();
+            const cameraListContainer = document.getElementById('mapCameraList');
+
+            if (cameraListContainer) {
+                cameraListContainer.innerHTML = '';
+            }
+
+            for (const camera of cameras) {
+                // Skip cameras without location
+                if (!camera.location || !camera.location.lat || !camera.location.lng) {
+                    continue;
+                }
+
+                // Create camera marker
+                const cameraIcon = L.divIcon({
+                    className: 'camera-marker',
+                    html: '<i class="material-icons" style="color: #FF6B6B; font-size: 32px;">photo_camera</i>',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    popupAnchor: [0, -32]
+                });
+
+                const marker = L.marker([camera.location.lat, camera.location.lng], {
+                    icon: cameraIcon
+                }).bindPopup(`<b>${camera.name}</b><br>${camera.phone || ''}`);
+
+                this.cameraMarkers[camera.id] = marker;
+
+                // Add to camera list in control panel
+                if (cameraListContainer) {
+                    const cameraItem = document.createElement('div');
+                    cameraItem.className = 'map-layer-item map-camera-item';
+                    cameraItem.innerHTML = `
+                        <label>
+                            <input type="checkbox" id="camera-${camera.id}" checked>
+                            <span>${camera.name}</span>
+                        </label>
+                    `;
+
+                    const checkbox = cameraItem.querySelector('input');
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            marker.addTo(this.map);
+                        } else {
+                            this.map.removeLayer(marker);
+                        }
+                    });
+
+                    cameraItem.addEventListener('click', (e) => {
+                        if (e.target.tagName !== 'INPUT') {
+                            this.map.setView([camera.location.lat, camera.location.lng], 15);
+                            marker.openPopup();
+                        }
+                    });
+
+                    cameraListContainer.appendChild(cameraItem);
+
+                    // Add marker to map by default
+                    marker.addTo(this.map);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading camera markers:', error);
+        }
+    }
+
+    /**
+     * Generiert eine zufällige Farbe
+     * @returns {string} - Hex-Farbe
+     */
+    getRandomColor() {
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+            '#98D8C8', '#6C5CE7', '#FDCB6E', '#E17055'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    /**
+     * Aktiviert Zeichnen-Modus (für zukünftige Erweiterung)
+     * @param {Function} callback - Callback mit gezeichneten Koordinaten
+     */
+    enableDrawMode(callback) {
+        // TODO: Integration mit Leaflet.draw oder ähnlichem Plugin
+        console.log('Zeichnen-Modus noch nicht implementiert');
+    }
+
+    /**
+     * Exportiert aktuelle Ansicht als Bild
+     * @returns {Promise<string>} - Data URL des Bildes
+     */
+    async exportAsImage() {
+        // TODO: Integration mit leaflet-image oder html2canvas
+        console.log('Export als Bild noch nicht implementiert');
+        return null;
+    }
+
+    /**
+     * Zerstört die Karte
+     */
+    destroy() {
+        if (this.map) {
+            this.map.remove();
+            this.map = null;
+        }
+    }
+}
+
+// Singleton-Instanz erstellen
+const mapView = new MapView();
+
+// Exportieren
+window.mapView = mapView;

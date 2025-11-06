@@ -6,10 +6,11 @@
 class DatabaseManager {
     constructor() {
         this.DB_NAME = 'wildkamera-db';
-        this.DB_VERSION = 1;
+        this.DB_VERSION = 2;  // Erhöht für KML-Support
         this.CAMERAS_STORE = 'cameras';
         this.SETTINGS_STORE = 'settings';
         this.PENDING_SMS_STORE = 'pending-sms';
+        this.KML_STORE = 'kmlFiles';
         this.db = null;
     }
 
@@ -50,6 +51,14 @@ class DatabaseManager {
                     pendingSmsStore.createIndex('cameraId', 'cameraId', { unique: false });
                     pendingSmsStore.createIndex('timestamp', 'timestamp', { unique: false });
                     console.log(`Object Store '${this.PENDING_SMS_STORE}' wurde erstellt`);
+                }
+
+                // KML-Files Store erstellen (wenn nicht vorhanden)
+                if (!db.objectStoreNames.contains(this.KML_STORE)) {
+                    const kmlStore = db.createObjectStore(this.KML_STORE, { keyPath: 'filename' });
+                    kmlStore.createIndex('filename', 'filename', { unique: true });
+                    kmlStore.createIndex('uploaded', 'uploaded', { unique: false });
+                    console.log(`Object Store '${this.KML_STORE}' wurde erstellt`);
                 }
             };
 
