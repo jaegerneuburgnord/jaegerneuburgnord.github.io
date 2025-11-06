@@ -218,7 +218,7 @@
         <div class="header-content">
             <div>
                 <h4 class="header-title">Wildkamera Steuerung</h4>
-                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.06-234511</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.06-235020</div>
             </div>
             <ul id="nav-mobile" class="right">
                 <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
@@ -282,6 +282,9 @@
                     </button>
                     <button id="fullscreenBtn" class="btn waves-effect waves-light green">
                         <i class="material-icons left">fullscreen</i>Vollbild
+                    </button>
+                    <button id="downloadOfflineBtn" class="btn waves-effect waves-light blue">
+                        <i class="material-icons left">cloud_download</i>Offline
                     </button>
                 </div>
                 <input type="file" id="kmlFileInput" accept=".kml" style="display: none;">
@@ -665,6 +668,7 @@
     <script src="kml-manager.js"></script>
     <script src="map-view.js"></script>
     <script src="swipe-navigation.js"></script>
+    <script src="offline-map-downloader.js"></script>
     <script src="layout-switcher.js"></script>
     <script src="offline-sync-manager.js"></script>
     <script src="sms-commands.js"></script>
@@ -924,6 +928,74 @@
 
           // Vollbild-Button Event
           document.getElementById('fullscreenBtn')?.addEventListener('click', toggleFullscreen);
+
+          // Offline-Download Button
+          document.getElementById('downloadOfflineBtn')?.addEventListener('click', async () => {
+              if (!window.mapView.map) {
+                  M.toast({ html: 'Karte nicht geladen', displayLength: 2000 });
+                  return;
+              }
+
+              const bounds = window.mapView.map.getBounds();
+              const currentZoom = window.mapView.map.getZoom();
+
+              // Berechne Download-Größe
+              const estimate = window.offlineMapDownloader.estimateDownloadSize(
+                  bounds,
+                  Math.max(currentZoom - 2, 10),
+                  Math.min(currentZoom + 2, 16)
+              );
+
+              // Bestätigungsdialog
+              const confirmed = confirm(
+                  `Offline-Karten Download:\n\n` +
+                  `Bereich: Aktuelle Ansicht\n` +
+                  `Kacheln: ${estimate.tileCount}\n` +
+                  `Größe: ~${estimate.estimatedSizeMB} MB\n` +
+                  `Zoom-Stufen: ${Math.max(currentZoom - 2, 10)} - ${Math.min(currentZoom + 2, 16)}\n\n` +
+                  `Download starten?`
+              );
+
+              if (!confirmed) return;
+
+              // Hole aktuellen Layer
+              const savedLayer = localStorage.getItem('selectedMapLayer') || 'OpenStreetMap';
+              let layerUrl = '';
+
+              switch(savedLayer) {
+                  case 'OpenStreetMap':
+                      layerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+                      break;
+                  case 'Google Satellite':
+                      layerUrl = 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
+                      break;
+                  case 'Google Hybrid':
+                      layerUrl = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+                      break;
+                  case 'Esri Satellite':
+                      layerUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+                      break;
+                  case 'OpenTopoMap':
+                      layerUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+                      break;
+                  default:
+                      layerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+              }
+
+              // Download starten
+              await window.offlineMapDownloader.downloadArea(
+                  bounds,
+                  layerUrl,
+                  Math.max(currentZoom - 2, 10),
+                  Math.min(currentZoom + 2, 16)
+              );
+          });
+
+          // Cache-Statistiken im Kartensteuerungs-Widget anzeigen
+          window.addEventListener('offline-download-progress', (e) => {
+              const { progress, downloaded, total } = e.detail;
+              console.log(`Download: ${progress}% (${downloaded}/${total})`);
+          });
 
           // Doppel-Tap auf Karte für Vollbild (optional)
           let lastTap = 0;
