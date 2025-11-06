@@ -54,14 +54,13 @@ class MapView {
                 attribution: '© Google',
                 maxZoom: 20
             }),
-            'Bing Satellite': L.tileLayer('https://ecn.t{s}.tiles.virtualearth.net/tiles/a{q}?g=1', {
-                attribution: '© Microsoft Bing',
-                maxZoom: 19,
-                subdomains: ['0', '1', '2', '3']
+            'Esri Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri, Maxar, Earthstar Geographics',
+                maxZoom: 19
             }),
-            'Bayern Atlas': L.tileLayer('https://geoservices.bayern.de/wmts/v1/ogc_dop80_oa/default/smerc/{z}/{y}/{x}?format=image/jpeg', {
-                attribution: '© Bayerische Vermessungsverwaltung',
-                maxZoom: 20
+            'OpenTopoMap': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenTopoMap (CC-BY-SA)',
+                maxZoom: 17
             })
         };
 
