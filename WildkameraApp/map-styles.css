@@ -386,9 +386,9 @@ body.map-fullscreen .map-controls {
     right: 20px;
 }
 
-/* Touch-optimized tab switching */
+/* Touch-optimized - allow normal touch behavior */
 .main-container {
-    touch-action: pan-y; /* Erlaubt vertikales Scrollen, erkennt aber horizontale Swipes */
+    touch-action: auto; /* Erlaubt normales Panning und Scrollen in alle Richtungen */
     user-select: none;
     -webkit-user-select: none;
 }

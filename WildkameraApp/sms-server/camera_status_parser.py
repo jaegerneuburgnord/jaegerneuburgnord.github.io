@@ -207,7 +207,7 @@ def point_in_polygon(point: Tuple[float, float], polygon: List[Tuple[float, floa
 
 
 def get_camera_status_files(
-    reviere_base_dir: str = "/mnt/synology/Reviere",
+    reviere_base_dir: str = "/home/wildkamera/Wildkamera/Reviere",
     days_back: int = 7
 ) -> List[Dict]:
     """

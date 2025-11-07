@@ -16,6 +16,7 @@ import glob
 import hashlib
 import zipfile
 import io
+from pathlib import Path
 
 from sms_modem import SmsModem
 from settings_manager import SettingsManager
@@ -996,7 +997,7 @@ async def get_cameras_with_status(days_back: int = 7, filter_by_polygon: bool = 
 
         # Lese alle Status-Dateien
         cameras = get_camera_status_files(
-            reviere_base_dir="/mnt/synology/Reviere",
+            reviere_base_dir="/home/wildkamera/Wildkamera/Reviere",
             days_back=days_back
         )
 
@@ -1008,7 +1009,7 @@ async def get_cameras_with_status(days_back: int = 7, filter_by_polygon: bool = 
             polygons = {}
 
             try:
-                reviere_dir = Path("/home/wildkamera/Reviere")
+                reviere_dir = Path("/home/wildkamera/Wildkamera/Reviere")
                 if reviere_dir.exists():
                     for kmz_file in reviere_dir.glob("*.kmz"):
                         revier_name = kmz_file.stem

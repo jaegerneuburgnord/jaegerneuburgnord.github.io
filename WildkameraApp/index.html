@@ -653,7 +653,8 @@
     <script src="sms-manager.js?v=222000"></script>
     <script src="kml-manager.js?v=222000"></script>
     <script src="map-view.js?v=222000"></script>
-    <script src="swipe-navigation.js?v=222000"></script>
+    <!-- Swipe navigation disabled to prevent accidental tab switching while panning map -->
+    <!-- <script src="swipe-navigation.js?v=222000"></script> -->
     <script src="offline-map-downloader.js?v=222000"></script>
     <script src="layout-switcher.js?v=222000"></script>
     <script src="offline-sync-manager.js?v=222000"></script>
@@ -887,11 +888,11 @@
               }
           });
 
-          // Swipe-Navigation initialisieren
-          if (window.swipeNavigation) {
-              window.swipeNavigation.init();
-              console.log('Swipe navigation enabled: Swipe left/right to switch tabs');
-          }
+          // Swipe-Navigation deaktiviert - verhindert versehentliches Tab-Wechseln beim Kartenverschieben
+          // if (window.swipeNavigation) {
+          //     window.swipeNavigation.init();
+          //     console.log('Swipe navigation enabled: Swipe left/right to switch tabs');
+          // }
 
           // Note: All map control buttons (Upload, Position, Sync, Labels, Fullscreen, Offline)
           // are now handled in map-view.js initControlPanel()
