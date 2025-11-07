@@ -507,20 +507,48 @@ class MapView {
      * Zoomt auf alle Reviergrenzen
      */
     fitBoundaries() {
-        if (Object.keys(this.boundaryLayers).length === 0) return;
+        console.log('[MapView] fitBoundaries() aufgerufen');
 
-        const allLayers = [];
-        for (const layer of Object.values(this.boundaryLayers)) {
-            if (this.map.hasLayer(layer)) {
-                allLayers.push(layer);
+        if (Object.keys(this.boundaryLayers).length === 0) {
+            console.log('[MapView] Keine boundaryLayers vorhanden');
+            return;
+        }
+
+        const allPolygons = [];
+
+        // Extrahiere alle individuellen Polygone aus den LayerGroups
+        for (const [name, layerGroup] of Object.entries(this.boundaryLayers)) {
+            if (this.map.hasLayer(layerGroup)) {
+                console.log(`[MapView] Layer "${name}" ist auf Karte sichtbar`);
+
+                // Hole alle Layer aus der LayerGroup
+                layerGroup.eachLayer(function(layer) {
+                    allPolygons.push(layer);
+                });
+            } else {
+                console.log(`[MapView] Layer "${name}" ist NICHT auf Karte sichtbar`);
             }
         }
 
-        if (allLayers.length > 0) {
-            const group = L.featureGroup(allLayers);
-            this.map.fitBounds(group.getBounds(), {
-                padding: [50, 50]
-            });
+        console.log(`[MapView] ${allPolygons.length} Polygone für Zoom gefunden`);
+
+        if (allPolygons.length > 0) {
+            try {
+                const group = L.featureGroup(allPolygons);
+                const bounds = group.getBounds();
+
+                console.log('[MapView] Bounds berechnet:', bounds);
+
+                this.map.fitBounds(bounds, {
+                    padding: [50, 50]
+                });
+
+                console.log('[MapView] fitBounds erfolgreich ausgeführt');
+            } catch (error) {
+                console.error('[MapView] Fehler beim fitBounds:', error);
+            }
+        } else {
+            console.warn('[MapView] Keine Polygone zum Zoomen gefunden!');
         }
     }
 
