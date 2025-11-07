@@ -393,27 +393,53 @@ class KmlManager {
             // Suche nach Placemarks mit Polygonen
             const placemarks = xmlDoc.getElementsByTagName('Placemark');
 
-            for (let placemark of placemarks) {
-                const polygonElement = placemark.getElementsByTagName('Polygon')[0];
+            console.log(`[KML-Parser] ${placemarks.length} Placemarks gefunden`);
 
-                if (polygonElement) {
+            for (let placemark of placemarks) {
+                // Name des Placemarks
+                const nameElement = placemark.getElementsByTagName('name')[0];
+                const placemarkName = nameElement ? nameElement.textContent : 'Unbenannt';
+
+                // Prüfe auf MultiGeometry (mehrere Geometrien in einem Placemark)
+                const multiGeometry = placemark.getElementsByTagName('MultiGeometry')[0];
+
+                let polygonElements = [];
+
+                if (multiGeometry) {
+                    // Wenn MultiGeometry vorhanden, hole alle Polygone daraus
+                    polygonElements = Array.from(multiGeometry.getElementsByTagName('Polygon'));
+                    console.log(`[KML-Parser] MultiGeometry in "${placemarkName}": ${polygonElements.length} Polygone`);
+                } else {
+                    // Sonst hole alle direkten Polygon-Kinder des Placemarks
+                    polygonElements = Array.from(placemark.getElementsByTagName('Polygon'));
+                    console.log(`[KML-Parser] Placemark "${placemarkName}": ${polygonElements.length} Polygone`);
+                }
+
+                // Verarbeite jedes Polygon
+                for (let i = 0; i < polygonElements.length; i++) {
+                    const polygonElement = polygonElements[i];
                     const coordsElement = polygonElement.getElementsByTagName('coordinates')[0];
 
                     if (coordsElement) {
                         const coordsText = coordsElement.textContent.trim();
                         const coords = this.parseCoordinatesText(coordsText);
 
-                        // Name des Placemarks
-                        const nameElement = placemark.getElementsByTagName('name')[0];
-                        const name = nameElement ? nameElement.textContent : 'Unbenannt';
+                        if (coords.length > 0) {
+                            // Bei mehreren Polygonen füge Nummer zum Namen hinzu
+                            const polygonName = polygonElements.length > 1
+                                ? `${placemarkName} (${i + 1})`
+                                : placemarkName;
 
-                        polygons.push({
-                            name: name,
-                            coordinates: coords
-                        });
+                            polygons.push({
+                                name: polygonName,
+                                coordinates: coords
+                            });
+                        }
                     }
                 }
             }
+
+            console.log(`[KML-Parser] Insgesamt ${polygons.length} Polygone extrahiert`);
 
             return polygons;
         } catch (error) {

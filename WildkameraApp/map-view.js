@@ -359,9 +359,11 @@ class MapView {
 
                 // Create layer group
                 const layerGroup = L.layerGroup();
-                const color = this.getRandomColor();
 
                 for (const polygon of polygons) {
+                    // Jedes Polygon bekommt eine eigene Farbe
+                    const color = this.getRandomColor();
+
                     const latLngs = polygon.coordinates.map(coord => [coord[1], coord[0]]);
                     const leafletPolygon = L.polygon(latLngs, {
                         color: color,
@@ -844,7 +846,11 @@ class MapView {
     getRandomColor() {
         const colors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
-            '#98D8C8', '#6C5CE7', '#FDCB6E', '#E17055'
+            '#98D8C8', '#6C5CE7', '#FDCB6E', '#E17055',
+            '#00B894', '#0984E3', '#6C5CE7', '#FD79A8',
+            '#FDCB6E', '#E17055', '#74B9FF', '#A29BFE',
+            '#FF7675', '#55EFC4', '#81ECEC', '#FAB1A0',
+            '#DFE6E9', '#00CEC9', '#B2BEC3', '#FFEAA7'
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     }
