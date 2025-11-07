@@ -221,7 +221,7 @@
         <div class="header-content">
             <div>
                 <h4 class="header-title">Wildkamera Steuerung</h4>
-                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.07-175245</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.07-180815</div>
             </div>
             <ul id="nav-mobile" class="right">
                 <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
@@ -282,6 +282,9 @@
                     </button>
                     <button id="syncKmlBtn" class="btn waves-effect waves-light">
                         <i class="material-icons left">sync</i>Sync
+                    </button>
+                    <button id="toggleLabelsBtn" class="btn waves-effect waves-light purple" title="Labels ein-/ausblenden">
+                        <i class="material-icons left">label</i>Labels
                     </button>
                     <button id="fullscreenBtn" class="btn waves-effect waves-light green">
                         <i class="material-icons left">fullscreen</i>Vollbild
@@ -1004,6 +1007,36 @@
                   setTimeout(() => window.mapView.map.invalidateSize(), 100);
               }
           };
+
+          // Labels Toggle Button
+          let labelsVisible = localStorage.getItem('mapLabelsVisible') !== 'false'; // Default: true
+          const toggleLabelsBtn = document.getElementById('toggleLabelsBtn');
+
+          // Initiale Einstellung anwenden
+          if (!labelsVisible) {
+              document.body.classList.add('hide-point-labels');
+              if (toggleLabelsBtn) {
+                  toggleLabelsBtn.classList.remove('purple');
+                  toggleLabelsBtn.classList.add('grey');
+              }
+          }
+
+          toggleLabelsBtn?.addEventListener('click', () => {
+              labelsVisible = !labelsVisible;
+              localStorage.setItem('mapLabelsVisible', labelsVisible);
+
+              if (labelsVisible) {
+                  document.body.classList.remove('hide-point-labels');
+                  toggleLabelsBtn.classList.remove('grey');
+                  toggleLabelsBtn.classList.add('purple');
+                  M.toast({ html: '✓ Labels werden angezeigt', displayLength: 2000 });
+              } else {
+                  document.body.classList.add('hide-point-labels');
+                  toggleLabelsBtn.classList.remove('purple');
+                  toggleLabelsBtn.classList.add('grey');
+                  M.toast({ html: '✓ Labels sind ausgeblendet', displayLength: 2000 });
+              }
+          });
 
           // Vollbild-Button Event
           document.getElementById('fullscreenBtn')?.addEventListener('click', toggleFullscreen);
