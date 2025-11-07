@@ -1070,7 +1070,7 @@ class MapView {
 
     /**
      * Add camera markers to map
-     * @param {Array} cameras - Array of camera objects with lat, lng, name
+     * Lädt Kamera-Status von txtFiles aus Reviere-Ordnern
      * @returns {Promise<number>} - Anzahl der geladenen Kameras
      */
     async loadCameraMarkers() {
@@ -1081,8 +1081,6 @@ class MapView {
             }
             this.cameraMarkers = {};
 
-            // Get cameras from database
-            const cameras = await window.dbManager.getAllCameras();
             const cameraListContainer = document.getElementById('mapCameraList');
 
             if (cameraListContainer) {
@@ -1091,28 +1089,109 @@ class MapView {
 
             let cameraCount = 0;
 
+            // Versuche Kamera-Status vom Server zu laden (aus txtFiles)
+            let cameras = [];
+
+            if (navigator.onLine) {
+                try {
+                    const response = await window.apiClient.getCameraStatus(7, true);
+                    if (response.success) {
+                        cameras = response.cameras;
+                        console.log(`[MapView] ${cameras.length} Kameras vom Server geladen (gefiltert nach Polygon)`);
+                    }
+                } catch (error) {
+                    console.warn('[MapView] Fehler beim Laden vom Server, verwende DB-Fallback:', error);
+                }
+            }
+
+            // Fallback: Lade aus lokaler DB wenn Server nicht verfügbar
+            if (cameras.length === 0) {
+                const dbCameras = await window.dbManager.getAllCameras();
+                cameras = dbCameras.filter(c => c.location && c.location.lat && c.location.lng)
+                    .map(c => ({
+                        cam_id: c.name,
+                        latitude: c.location.lat,
+                        longitude: c.location.lng,
+                        imei: c.phone || 'N/A',
+                        battery: null,
+                        temperature: null,
+                        from_db: true
+                    }));
+                console.log(`[MapView] ${cameras.length} Kameras aus DB geladen (Fallback)`);
+            }
+
             for (const camera of cameras) {
-                // Skip cameras without location
-                if (!camera.location || !camera.location.lat || !camera.location.lng) {
+                // Skip cameras without GPS
+                if (!camera.latitude || !camera.longitude) {
                     continue;
                 }
 
                 cameraCount++;
 
+                // Batterie-Status Farbe
+                let batteryColor = '#999'; // Grau für unbekannt
+                if (camera.battery !== null && camera.battery !== undefined) {
+                    if (camera.battery >= 75) batteryColor = '#4CAF50'; // Grün
+                    else if (camera.battery >= 50) batteryColor = '#FFC107'; // Gelb
+                    else if (camera.battery >= 25) batteryColor = '#FF9800'; // Orange
+                    else batteryColor = '#F44336'; // Rot
+                }
+
                 // Create camera marker
                 const cameraIcon = L.divIcon({
                     className: 'camera-marker',
-                    html: '<i class="material-icons" style="color: #FF6B6B; font-size: 32px;">photo_camera</i>',
+                    html: `<i class="material-icons" style="color: ${batteryColor}; font-size: 32px;">photo_camera</i>`,
                     iconSize: [32, 32],
                     iconAnchor: [16, 32],
                     popupAnchor: [0, -32]
                 });
 
-                const marker = L.marker([camera.location.lat, camera.location.lng], {
-                    icon: cameraIcon
-                }).bindPopup(`<b>${camera.name}</b><br>${camera.phone || ''}`);
+                // Erstelle detailliertes Popup
+                let popupContent = `<div style="min-width: 200px;">`;
+                popupContent += `<h6 style="margin: 0 0 8px 0; font-weight: 600;">${camera.cam_id || 'Kamera'}</h6>`;
 
-                this.cameraMarkers[camera.id] = marker;
+                if (!camera.from_db) {
+                    // Status-Informationen aus txtFile
+                    if (camera.imei) {
+                        popupContent += `<div style="margin: 4px 0;"><strong>IMEI:</strong> ${camera.imei}</div>`;
+                    }
+                    if (camera.battery !== null && camera.battery !== undefined) {
+                        popupContent += `<div style="margin: 4px 0;"><strong>Batterie:</strong> <span style="color: ${batteryColor};">${camera.battery}%</span></div>`;
+                    }
+                    if (camera.temperature !== null && camera.temperature !== undefined) {
+                        popupContent += `<div style="margin: 4px 0;"><strong>Temperatur:</strong> ${camera.temperature}°C</div>`;
+                    }
+                    if (camera.signal_quality !== null && camera.signal_quality !== undefined) {
+                        popupContent += `<div style="margin: 4px 0;"><strong>Signal:</strong> ${camera.signal_quality}</div>`;
+                    }
+                    if (camera.total_pics !== null && camera.total_pics !== undefined) {
+                        popupContent += `<div style="margin: 4px 0;"><strong>Bilder:</strong> ${camera.total_pics}</div>`;
+                    }
+                    if (camera.sd_percent !== null && camera.sd_percent !== undefined) {
+                        popupContent += `<div style="margin: 4px 0;"><strong>SD-Karte:</strong> ${camera.sd_percent}% belegt</div>`;
+                    }
+                    if (camera.date_iso) {
+                        const date = new Date(camera.date_iso);
+                        popupContent += `<div style="margin: 4px 0; font-size: 11px; color: #999;"><strong>Letzter Status:</strong> ${date.toLocaleString('de-DE')}</div>`;
+                    }
+                    if (camera.in_revier) {
+                        popupContent += `<div style="margin: 4px 0; font-size: 11px; color: #4CAF50;"><strong>Revier:</strong> ${camera.in_revier}</div>`;
+                    }
+                } else {
+                    popupContent += `<div style="margin: 4px 0; color: #999; font-size: 11px;">Aus lokaler Datenbank</div>`;
+                    popupContent += `<div style="margin: 4px 0;"><strong>IMEI:</strong> ${camera.imei}</div>`;
+                }
+
+                popupContent += `<div style="margin-top: 8px; font-size: 11px; color: #666;">`;
+                popupContent += `GPS: ${camera.latitude.toFixed(6)}, ${camera.longitude.toFixed(6)}`;
+                popupContent += `</div>`;
+                popupContent += `</div>`;
+
+                const marker = L.marker([camera.latitude, camera.longitude], {
+                    icon: cameraIcon
+                }).bindPopup(popupContent);
+
+                this.cameraMarkers[camera.imei || camera.cam_id] = marker;
 
                 // Add to camera list in control panel
                 if (cameraListContainer) {
