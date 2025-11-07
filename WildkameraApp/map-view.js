@@ -361,26 +361,32 @@ class MapView {
                 const layerGroup = L.layerGroup();
 
                 for (const polygon of polygons) {
-                    // Jedes Polygon bekommt eine eigene Farbe
-                    const color = this.getRandomColor();
+                    // Verwende KML-Style falls vorhanden, sonst zufällige Farbe
+                    const defaultColor = this.getRandomColor();
+                    const polygonStyle = {
+                        color: polygon.style?.color || defaultColor,
+                        weight: polygon.style?.weight || 2,
+                        fillOpacity: polygon.style?.fillOpacity !== undefined ? polygon.style.fillOpacity : 0.2
+                    };
+
+                    console.log(`[MapView] Erstelle Polygon "${polygon.name}" mit Style:`, polygonStyle);
 
                     const latLngs = polygon.coordinates.map(coord => [coord[1], coord[0]]);
-                    const leafletPolygon = L.polygon(latLngs, {
-                        color: color,
-                        weight: 2,
-                        fillOpacity: 0.2
-                    });
+                    const leafletPolygon = L.polygon(latLngs, polygonStyle);
 
-                    if (polygon.name) {
-                        leafletPolygon.bindPopup(`<b>${polygon.name}</b>`);
+                    // Popup mit Name und optional Description
+                    let popupContent = `<b>${polygon.name}</b>`;
+                    if (polygon.description) {
+                        popupContent += `<br><i>${polygon.description}</i>`;
                     }
+                    leafletPolygon.bindPopup(popupContent);
 
                     layerGroup.addLayer(leafletPolygon);
 
                     // Add to search index
                     this.searchIndex.push({
                         name: polygon.name || 'Unbenannt',
-                        description: '',
+                        description: polygon.description || '',
                         layer: leafletPolygon,
                         parentLayer: layerName
                     });

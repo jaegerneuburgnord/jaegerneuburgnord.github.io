@@ -403,7 +403,20 @@ class KmlManager {
                 const nameElement = placemark.getElementsByTagName('name')[0];
                 const placemarkName = nameElement ? nameElement.textContent.trim() : `Unbenannt ${i + 1}`;
 
+                // Description extrahieren
+                const descriptionElement = placemark.getElementsByTagName('description')[0];
+                const description = descriptionElement ? descriptionElement.textContent.trim() : null;
+
+                // Style extrahieren
+                const placemarkStyle = this.extractStyle(placemark);
+
                 console.log(`[KML-Parser] Verarbeite Placemark ${i + 1}/${placemarks.length}: "${placemarkName}"`);
+                if (description) {
+                    console.log(`[KML-Parser]   -> Description: "${description}"`);
+                }
+                if (Object.keys(placemarkStyle).length > 0) {
+                    console.log(`[KML-Parser]   -> Style gefunden:`, placemarkStyle);
+                }
 
                 // Sammle alle Polygon-Elemente (egal wo sie verschachtelt sind)
                 const polygonElements = placemark.getElementsByTagName('Polygon');
@@ -451,7 +464,9 @@ class KmlManager {
 
                             polygons.push({
                                 name: polygonName,
-                                coordinates: coords
+                                description: description,
+                                coordinates: coords,
+                                style: placemarkStyle
                             });
                         } else {
                             console.warn(`[KML-Parser]   -> ✗ Polygon ${j + 1}: Keine gültigen Koordinaten gefunden!`);
@@ -502,6 +517,70 @@ class KmlManager {
         }
 
         return coords;
+    }
+
+    /**
+     * Konvertiert KML-Farbe (AABBGGRR) zu CSS Hex (#RRGGBB)
+     * @param {string} kmlColor - KML-Farbe im Format AABBGGRR
+     * @returns {string} - CSS Hex-Farbe
+     */
+    convertKmlColor(kmlColor) {
+        if (!kmlColor || kmlColor.length !== 8) {
+            return null;
+        }
+
+        // KML Format: AABBGGRR
+        const aa = kmlColor.substring(0, 2); // Alpha
+        const bb = kmlColor.substring(2, 4); // Blue
+        const gg = kmlColor.substring(4, 6); // Green
+        const rr = kmlColor.substring(6, 8); // Red
+
+        // CSS Format: #RRGGBB
+        return `#${rr}${gg}${bb}`;
+    }
+
+    /**
+     * Extrahiert Style-Informationen aus einem Placemark
+     * @param {Element} placemark - Placemark XML-Element
+     * @returns {Object} - Style-Objekt mit color, fillOpacity, weight
+     */
+    extractStyle(placemark) {
+        const style = {};
+
+        const styleElement = placemark.getElementsByTagName('Style')[0];
+        if (!styleElement) {
+            return style;
+        }
+
+        // LineStyle (Randfarbe und Dicke)
+        const lineStyle = styleElement.getElementsByTagName('LineStyle')[0];
+        if (lineStyle) {
+            const colorElement = lineStyle.getElementsByTagName('color')[0];
+            const widthElement = lineStyle.getElementsByTagName('width')[0];
+
+            if (colorElement) {
+                const kmlColor = colorElement.textContent.trim();
+                style.color = this.convertKmlColor(kmlColor);
+            }
+
+            if (widthElement) {
+                style.weight = parseFloat(widthElement.textContent);
+            }
+        }
+
+        // PolyStyle (Füllfarbe und Transparenz)
+        const polyStyle = styleElement.getElementsByTagName('PolyStyle')[0];
+        if (polyStyle) {
+            const colorElement = polyStyle.getElementsByTagName('color')[0];
+            if (colorElement) {
+                const kmlColor = colorElement.textContent.trim();
+                // Alpha-Kanal für fillOpacity verwenden
+                const alpha = parseInt(kmlColor.substring(0, 2), 16);
+                style.fillOpacity = alpha / 255;
+            }
+        }
+
+        return style;
     }
 }
 
