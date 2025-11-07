@@ -19,6 +19,11 @@ import io
 
 from sms_modem import SmsModem
 from settings_manager import SettingsManager
+from camera_status_parser import (
+    get_camera_status_files,
+    filter_cameras_in_polygons,
+    parse_gps_line
+)
 
 # Logging konfigurieren
 logging.basicConfig(
@@ -970,6 +975,104 @@ async def sync_reviere_kmz(client_hashes: List[str] = []):
         raise HTTPException(
             status_code=500,
             detail=f"Fehler beim Sync: {str(e)}"
+        )
+
+
+@app.get("/cameras/status")
+async def get_cameras_with_status(days_back: int = 7, filter_by_polygon: bool = True):
+    """
+    Holt alle Kamera-Status-Dateien aus den Reviere-Ordnern
+    und filtert sie optional nach Revier-Polygonen
+
+    Args:
+        days_back: Wie viele Tage zurück sollen Dateien gelesen werden (default: 7)
+        filter_by_polygon: Nur Kameras innerhalb der Revier-Polygone zeigen (default: True)
+
+    Returns:
+        Liste von Kamera-Status-Objekten mit GPS-Positionen
+    """
+    try:
+        logger.info(f"Lade Kamera-Status (days_back={days_back}, filter_by_polygon={filter_by_polygon})")
+
+        # Lese alle Status-Dateien
+        cameras = get_camera_status_files(
+            reviere_base_dir="/mnt/synology/Reviere",
+            days_back=days_back
+        )
+
+        logger.info(f"{len(cameras)} Kamera-Status-Dateien gefunden")
+
+        # Falls Polygon-Filter aktiviert
+        if filter_by_polygon:
+            # Lade KML-Polygone aus Reviere-Ordner
+            polygons = {}
+
+            try:
+                reviere_dir = Path("/home/wildkamera/Reviere")
+                if reviere_dir.exists():
+                    for kmz_file in reviere_dir.glob("*.kmz"):
+                        revier_name = kmz_file.stem
+
+                        # Extract KML from KMZ und parse Koordinaten
+                        try:
+                            with zipfile.ZipFile(str(kmz_file), 'r') as z:
+                                # Suche .kml Datei in KMZ
+                                kml_files = [f for f in z.namelist() if f.endswith('.kml')]
+                                if kml_files:
+                                    kml_content = z.read(kml_files[0]).decode('utf-8')
+
+                                    # Parse KML für Polygon-Koordinaten (vereinfacht)
+                                    # Suche <coordinates> Tags
+                                    import xml.etree.ElementTree as ET
+                                    root = ET.fromstring(kml_content)
+
+                                    # Namespace handling
+                                    ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+                                    coords_elements = root.findall('.//kml:coordinates', ns)
+
+                                    if not coords_elements:
+                                        # Versuche ohne Namespace
+                                        coords_elements = root.findall('.//coordinates')
+
+                                    if coords_elements:
+                                        # Nehme erstes Polygon
+                                        coords_text = coords_elements[0].text.strip()
+                                        # Parse: lng,lat,alt lng,lat,alt ...
+                                        polygon_coords = []
+                                        for point in coords_text.split():
+                                            parts = point.split(',')
+                                            if len(parts) >= 2:
+                                                lng, lat = float(parts[0]), float(parts[1])
+                                                polygon_coords.append((lat, lng))
+
+                                        if polygon_coords:
+                                            polygons[revier_name] = polygon_coords
+                                            logger.info(f"Polygon für {revier_name} geladen: {len(polygon_coords)} Punkte")
+
+                        except Exception as e:
+                            logger.warning(f"Fehler beim Laden von {kmz_file.name}: {e}")
+
+                logger.info(f"{len(polygons)} Revier-Polygone geladen")
+
+                # Filtere Kameras
+                cameras = filter_cameras_in_polygons(cameras, polygons)
+
+            except Exception as e:
+                logger.error(f"Fehler beim Laden der Polygone: {e}")
+
+        return {
+            "success": True,
+            "cameras": cameras,
+            "count": len(cameras),
+            "filtered_by_polygon": filter_by_polygon,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Fehler beim Laden der Kamera-Status: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fehler: {str(e)}"
         )
 
 

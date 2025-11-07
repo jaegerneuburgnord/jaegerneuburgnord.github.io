@@ -413,7 +413,8 @@ body.map-fullscreen .map-controls {
 }
 
 /* Labels ausblenden wenn gewünscht */
-body.hide-point-labels .point-label {
-    opacity: 0;
+body.hide-point-labels .point-label,
+body.hide-point-labels .leaflet-tooltip.point-label {
+    opacity: 0 !important;
     pointer-events: none;
 }

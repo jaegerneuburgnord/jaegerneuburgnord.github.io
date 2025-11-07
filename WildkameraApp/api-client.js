@@ -256,6 +256,16 @@ class ApiClient {
     async listPorts() {
         return await this.request('/modem/ports');
     }
+
+    /**
+     * Holt Kamera-Status von txtFiles aus Reviere-Ordnern
+     * @param {number} daysBack - Wie viele Tage zurück (default: 7)
+     * @param {boolean} filterByPolygon - Nur Kameras in Polygonen (default: true)
+     * @returns {Promise<Object>} - Kamera-Status mit GPS-Positionen
+     */
+    async getCameraStatus(daysBack = 7, filterByPolygon = true) {
+        return await this.request(`/cameras/status?days_back=${daysBack}&filter_by_polygon=${filterByPolygon}`);
+    }
 }
 
 // Singleton-Instanz erstellen
