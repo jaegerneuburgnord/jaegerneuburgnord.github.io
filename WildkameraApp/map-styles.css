@@ -308,10 +308,7 @@ body:not(.map-tab-active) .map-control-panel {
     display: none;
 }
 
-/* Hide old map controls when new control panel is active */
-.map-tab-active .map-controls {
-    display: none;
-}
+/* Map controls are always visible (removed display:none rule) */
 
 /* Leaflet popup customization */
 .leaflet-popup-content-wrapper {
