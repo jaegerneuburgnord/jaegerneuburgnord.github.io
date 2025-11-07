@@ -18,6 +18,7 @@ class MapView {
         this.cameraMarkers = {};
         this.baseLayers = {};  // Verschiedene Karten-Layer
         this.currentLayer = null;  // Aktuell aktiver Layer
+        this.styleUrlColorMap = {};  // Maps styleUrl zu Farbe (für konsistente Farbzuweisung)
     }
 
     /**
@@ -362,8 +363,14 @@ class MapView {
 
                 for (const geometry of geometries) {
                     try {
-                        // Verwende KML-Style falls vorhanden, sonst zufällige Farbe
-                        const defaultColor = this.getRandomColor();
+                        // Verwende Farbe basierend auf StyleURL (gleiche StyleURL = gleiche Farbe)
+                        let defaultColor;
+                        if (geometry.type === 'Point' && geometry.styleUrl) {
+                            defaultColor = this.getColorForStyleUrl(geometry.styleUrl);
+                        } else {
+                            defaultColor = this.getRandomColor();
+                        }
+
                         const style = {
                             color: geometry.style?.color || defaultColor,
                             weight: geometry.style?.weight || 2,
@@ -397,6 +404,16 @@ class MapView {
                                 radius: 6,
                                 weight: 2
                             });
+
+                            // Füge permanentes Label über dem Punkt hinzu
+                            if (geometry.name) {
+                                leafletLayer.bindTooltip(geometry.name, {
+                                    permanent: true,
+                                    direction: 'top',
+                                    className: 'point-label',
+                                    offset: [0, -10]
+                                });
+                            }
                         }
 
                         if (leafletLayer) {
@@ -910,6 +927,31 @@ class MapView {
             '#C71585'  // Medium Violet Red
         ];
         return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    /**
+     * Gibt eine konsistente Farbe für eine StyleURL zurück
+     * Gleiche StyleURL = gleiche Farbe (wird gecached)
+     * @param {string} styleUrl - StyleURL aus KML
+     * @returns {string} - Hex-Farbe
+     */
+    getColorForStyleUrl(styleUrl) {
+        if (!styleUrl) {
+            return this.getRandomColor();
+        }
+
+        // Wenn wir diese StyleURL schon kennen, gib die gleiche Farbe zurück
+        if (this.styleUrlColorMap[styleUrl]) {
+            return this.styleUrlColorMap[styleUrl];
+        }
+
+        // Neue StyleURL: generiere Farbe und cache sie
+        const color = this.getRandomColor();
+        this.styleUrlColorMap[styleUrl] = color;
+
+        console.log(`[MapView] Neue StyleURL "${styleUrl}" -> Farbe ${color}`);
+
+        return color;
     }
 
     /**
