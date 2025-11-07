@@ -884,13 +884,30 @@ class MapView {
      * @returns {string} - Hex-Farbe
      */
     getRandomColor() {
+        // Optimierte Farbpalette für Kartenhintergründe
+        // Entfernt: Grün-, Blau-, Cyan-, Grautöne (schlechter Kontrast auf Karten)
+        // Behalten: Rot, Pink, Orange, Gelb, Violett (guter Kontrast)
         const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
-            '#98D8C8', '#6C5CE7', '#FDCB6E', '#E17055',
-            '#00B894', '#0984E3', '#6C5CE7', '#FD79A8',
-            '#FDCB6E', '#E17055', '#74B9FF', '#A29BFE',
-            '#FF7675', '#55EFC4', '#81ECEC', '#FAB1A0',
-            '#DFE6E9', '#00CEC9', '#B2BEC3', '#FFEAA7'
+            '#FF6B6B', // Rot
+            '#FF7675', // Hellrot
+            '#FF3838', // Kräftiges Rot
+            '#FFA07A', // Lachs
+            '#FF6348', // Tomatenrot
+            '#E17055', // Koralle
+            '#FD79A8', // Pink
+            '#FF69B4', // Hot Pink
+            '#FF1493', // Deep Pink
+            '#6C5CE7', // Lila
+            '#A29BFE', // Hellviolett
+            '#8B00FF', // Violett
+            '#FDCB6E', // Gelb
+            '#FFD700', // Gold
+            '#FFEAA7', // Hellgelb
+            '#FFA500', // Orange
+            '#FF8C00', // Dark Orange
+            '#FAB1A0', // Pfirsich
+            '#DC143C', // Crimson
+            '#C71585'  // Medium Violet Red
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     }
