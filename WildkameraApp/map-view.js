@@ -111,9 +111,42 @@ class MapView {
                 </div>
 
                 <div class="map-button-container">
-                    <button class="btn-small waves-effect waves-light green" id="toggleLocationBtn">
-                        <i class="material-icons left">my_location</i>Standort
+                    <button class="btn-small waves-effect waves-light" id="uploadKmlBtn">
+                        <i class="material-icons left">upload_file</i>KML Upload
                     </button>
+                    <button class="btn-small waves-effect waves-light green" id="toggleLocationBtn">
+                        <i class="material-icons left">my_location</i>Position
+                    </button>
+                </div>
+
+                <div class="map-button-container">
+                    <button class="btn-small waves-effect waves-light" id="syncKmlBtn">
+                        <i class="material-icons left">sync</i>Sync
+                    </button>
+                    <button class="btn-small waves-effect waves-light purple" id="toggleLabelsBtn" title="Labels ein-/ausblenden">
+                        <i class="material-icons left">label</i>Labels
+                    </button>
+                </div>
+
+                <div class="map-button-container">
+                    <button class="btn-small waves-effect waves-light green" id="fullscreenBtn">
+                        <i class="material-icons left">fullscreen</i>Vollbild
+                    </button>
+                    <button class="btn-small waves-effect waves-light blue" id="downloadOfflineBtn">
+                        <i class="material-icons left">cloud_download</i>Offline
+                    </button>
+                </div>
+
+                <div class="map-layer-section">
+                    <div class="map-section-header">
+                        <span>Hochgeladene KML-Dateien</span>
+                        <i class="material-icons">expand_less</i>
+                    </div>
+                    <div class="map-layer-items" id="uploadedKmlList">
+                        <div style="padding: 10px; color: #999; font-size: 12px; text-align: center;">
+                            Keine hochgeladenen Dateien
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -147,10 +180,147 @@ class MapView {
         // Layer-Selector befüllen
         this.populateLayerSelector();
 
+        // Uploaded KML List befüllen
+        this.populateUploadedKmlList();
+
         // Location button
         const locationBtn = document.getElementById('toggleLocationBtn');
         locationBtn.addEventListener('click', () => {
             this.toggleLocationTracking();
+        });
+
+        // KML Upload button
+        const uploadKmlBtn = document.getElementById('uploadKmlBtn');
+        const kmlFileInput = document.getElementById('kmlFileInput');
+        uploadKmlBtn?.addEventListener('click', () => {
+            kmlFileInput?.click();
+        });
+
+        // Sync button
+        const syncKmlBtn = document.getElementById('syncKmlBtn');
+        syncKmlBtn?.addEventListener('click', async () => {
+            if (!navigator.onLine) {
+                M.toast({ html: '⚠️ Offline - Synchronisation nicht möglich', displayLength: 3000 });
+                return;
+            }
+
+            M.toast({ html: 'Synchronisiere Reviere...', displayLength: 2000 });
+
+            try {
+                const result = await window.kmlManager.syncReviere();
+
+                if (result.success) {
+                    let message = `✓ Reviere synchronisiert`;
+                    if (result.downloaded > 0) {
+                        message += `: ${result.downloaded} neu`;
+                    }
+                    if (result.deleted > 0) {
+                        message += `, ${result.deleted} gelöscht`;
+                    }
+                    if (result.downloaded === 0 && result.deleted === 0) {
+                        message = `✓ Alle Reviere aktuell`;
+                    }
+                    M.toast({ html: message, displayLength: 4000 });
+
+                    // Karte neu laden wenn Änderungen vorhanden
+                    if (this.map && (result.downloaded > 0 || result.deleted > 0)) {
+                        await this.loadAllBoundaries();
+                        this.fitBoundaries();
+                    }
+                } else {
+                    M.toast({ html: `✗ Sync fehlgeschlagen: ${result.message}`, displayLength: 5000 });
+                }
+            } catch (error) {
+                console.error('Sync-Fehler:', error);
+                M.toast({ html: '✗ Synchronisation fehlgeschlagen', displayLength: 4000 });
+            }
+        });
+
+        // Labels Toggle button
+        let labelsVisible = localStorage.getItem('mapLabelsVisible') !== 'false';
+        const toggleLabelsBtn = document.getElementById('toggleLabelsBtn');
+
+        // Initiale Einstellung anwenden
+        if (!labelsVisible) {
+            document.body.classList.add('hide-point-labels');
+            if (toggleLabelsBtn) {
+                toggleLabelsBtn.classList.remove('purple');
+                toggleLabelsBtn.classList.add('grey');
+            }
+        }
+
+        toggleLabelsBtn?.addEventListener('click', () => {
+            labelsVisible = !labelsVisible;
+            localStorage.setItem('mapLabelsVisible', labelsVisible);
+
+            if (labelsVisible) {
+                document.body.classList.remove('hide-point-labels');
+                toggleLabelsBtn.classList.remove('grey');
+                toggleLabelsBtn.classList.add('purple');
+                M.toast({ html: '✓ Labels werden angezeigt', displayLength: 2000 });
+            } else {
+                document.body.classList.add('hide-point-labels');
+                toggleLabelsBtn.classList.remove('purple');
+                toggleLabelsBtn.classList.add('grey');
+                M.toast({ html: '✓ Labels sind ausgeblendet', displayLength: 2000 });
+            }
+        });
+
+        // Fullscreen button
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        fullscreenBtn?.addEventListener('click', () => {
+            document.body.classList.toggle('map-fullscreen');
+            if (document.body.classList.contains('map-fullscreen')) {
+                fullscreenBtn.querySelector('i').textContent = 'fullscreen_exit';
+                M.toast({ html: 'Vollbildmodus aktiviert', displayLength: 2000 });
+            } else {
+                fullscreenBtn.querySelector('i').textContent = 'fullscreen';
+                M.toast({ html: 'Vollbildmodus beendet', displayLength: 2000 });
+            }
+            setTimeout(() => this.map?.invalidateSize(), 100);
+        });
+
+        // Offline Download button
+        const downloadOfflineBtn = document.getElementById('downloadOfflineBtn');
+        downloadOfflineBtn?.addEventListener('click', async () => {
+            if (!this.map) {
+                M.toast({ html: 'Karte nicht geladen', displayLength: 2000 });
+                return;
+            }
+
+            const bounds = this.map.getBounds();
+            const currentZoom = this.map.getZoom();
+
+            const minZoom = currentZoom;
+            const maxZoom = Math.min(currentZoom + 2, 18);
+
+            M.toast({
+                html: `Lade Karten-Tiles herunter (Zoom ${minZoom}-${maxZoom})...`,
+                displayLength: 3000
+            });
+
+            try {
+                const downloader = new OfflineMapDownloader();
+                const result = await downloader.downloadArea(
+                    bounds,
+                    minZoom,
+                    maxZoom,
+                    (progress) => {
+                        console.log(`Download-Fortschritt: ${progress.downloaded}/${progress.total}`);
+                    }
+                );
+
+                M.toast({
+                    html: `✓ ${result.downloaded} Tiles heruntergeladen`,
+                    displayLength: 4000
+                });
+            } catch (error) {
+                console.error('Offline-Download fehlgeschlagen:', error);
+                M.toast({
+                    html: '✗ Download fehlgeschlagen',
+                    displayLength: 3000
+                });
+            }
         });
     }
 
@@ -203,6 +373,115 @@ class MapView {
         console.log('Switched to layer:', layerName);
         if (typeof M !== 'undefined' && M.toast) {
             M.toast({ html: `Karte gewechselt zu: ${layerName}`, displayLength: 2000 });
+        }
+    }
+
+    /**
+     * Befüllt die Liste der hochgeladenen KML-Dateien
+     */
+    async populateUploadedKmlList() {
+        const listContainer = document.getElementById('uploadedKmlList');
+        if (!listContainer) return;
+
+        try {
+            // Hole user-uploaded KML-Dateien
+            const userKmls = await this.kmlManager.getUserUploadedKmls();
+
+            if (userKmls.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="padding: 10px; color: #999; font-size: 12px; text-align: center;">
+                        Keine hochgeladenen Dateien
+                    </div>
+                `;
+                return;
+            }
+
+            listContainer.innerHTML = '';
+
+            userKmls.forEach(kml => {
+                const kmlItem = document.createElement('div');
+                kmlItem.className = 'map-layer-item';
+                kmlItem.style.display = 'flex';
+                kmlItem.style.justifyContent = 'space-between';
+                kmlItem.style.alignItems = 'center';
+                kmlItem.style.padding = '8px';
+                kmlItem.style.borderBottom = '1px solid #f0f0f0';
+
+                // Display original filename or hashed filename
+                const displayName = kml.originalFilename || kml.filename;
+
+                kmlItem.innerHTML = `
+                    <div style="flex: 1; overflow: hidden;">
+                        <div style="font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${kml.filename}">
+                            ${displayName}
+                        </div>
+                        <div style="font-size: 11px; color: #999;">
+                            ${new Date(kml.uploaded).toLocaleDateString('de-DE')}
+                        </div>
+                    </div>
+                    <button class="btn-small waves-effect waves-light red delete-kml-btn"
+                            data-filename="${kml.filename}"
+                            style="padding: 0 8px; height: 28px; line-height: 28px;">
+                        <i class="material-icons" style="font-size: 18px;">delete</i>
+                    </button>
+                `;
+
+                listContainer.appendChild(kmlItem);
+            });
+
+            // Add event listeners to delete buttons
+            const deleteButtons = listContainer.querySelectorAll('.delete-kml-btn');
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const filename = btn.getAttribute('data-filename');
+                    await this.handleDeleteKml(filename);
+                });
+            });
+
+        } catch (error) {
+            console.error('[MapView] Fehler beim Laden der KML-Liste:', error);
+            listContainer.innerHTML = `
+                <div style="padding: 10px; color: #f44336; font-size: 12px; text-align: center;">
+                    Fehler beim Laden der Liste
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Behandelt das Löschen (Archivieren) einer KML-Datei
+     * @param {string} filename - Dateiname
+     */
+    async handleDeleteKml(filename) {
+        // Bestätigung
+        if (!confirm(`Möchten Sie die Datei "${filename}" wirklich archivieren?\n\nDie Datei wird auf dem Server in .old umbenannt und lokal entfernt.`)) {
+            return;
+        }
+
+        try {
+            M.toast({ html: `Archiviere "${filename}"...`, displayLength: 2000 });
+
+            const result = await this.kmlManager.archiveKml(filename);
+
+            if (result.success) {
+                M.toast({ html: `✓ ${result.message}`, displayLength: 4000 });
+
+                // UI aktualisieren
+                await this.populateUploadedKmlList();
+
+                // Karte neu laden
+                if (this.map) {
+                    await this.loadAllBoundaries();
+                    this.fitBoundaries();
+                }
+            } else {
+                M.toast({ html: `✗ ${result.message}`, displayLength: 4000 });
+            }
+
+        } catch (error) {
+            console.error('[MapView] Fehler beim Archivieren:', error);
+            M.toast({ html: `✗ Archivierung fehlgeschlagen: ${error.message}`, displayLength: 4000 });
         }
     }
 

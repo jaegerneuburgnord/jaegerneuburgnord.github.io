@@ -221,7 +221,7 @@
         <div class="header-content">
             <div>
                 <h4 class="header-title">Wildkamera Steuerung</h4>
-                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.07-180815</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.07-210000</div>
             </div>
             <ul id="nav-mobile" class="right">
                 <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
@@ -273,26 +273,6 @@
 
             <!-- Karte Tab -->
             <div id="map-tab" class="tab-content-container" style="display: none;">
-                <div class="map-controls">
-                    <button id="uploadKmlBtn" class="btn waves-effect waves-light">
-                        <i class="material-icons left">upload_file</i>KML Upload
-                    </button>
-                    <button id="myLocationBtn" class="btn waves-effect waves-light">
-                        <i class="material-icons left">my_location</i>Position
-                    </button>
-                    <button id="syncKmlBtn" class="btn waves-effect waves-light">
-                        <i class="material-icons left">sync</i>Sync
-                    </button>
-                    <button id="toggleLabelsBtn" class="btn waves-effect waves-light purple" title="Labels ein-/ausblenden">
-                        <i class="material-icons left">label</i>Labels
-                    </button>
-                    <button id="fullscreenBtn" class="btn waves-effect waves-light green">
-                        <i class="material-icons left">fullscreen</i>Vollbild
-                    </button>
-                    <button id="downloadOfflineBtn" class="btn waves-effect waves-light blue">
-                        <i class="material-icons left">cloud_download</i>Offline
-                    </button>
-                </div>
                 <input type="file" id="kmlFileInput" accept=".kml" style="display: none;">
                 <div id="map" class="map-container"></div>
             </div>
@@ -815,6 +795,10 @@
                       // Karte neu laden
                       if (window.mapView.map) {
                           await window.mapView.loadAllBoundaries();
+                          // Uploaded KML Liste aktualisieren
+                          if (window.mapView.populateUploadedKmlList) {
+                              await window.mapView.populateUploadedKmlList();
+                          }
                       }
                   } catch (error) {
                       M.toast({ html: `Fehler: ${error.message}`, displayLength: 4000 });

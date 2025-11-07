@@ -10,6 +10,52 @@ class KmlManager {
     }
 
     /**
+     * Generates a hash-based filename for KML uploads
+     * Format: YYYYMMDD_HHMMSS_{hash8}_{originalname}.kml
+     * @param {File} file - File object
+     * @returns {Promise<string>} - Hashed filename
+     */
+    async generateHashedFilename(file) {
+        try {
+            // Read file content
+            const buffer = await file.arrayBuffer();
+
+            // Generate SHA-256 hash
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+            // Take first 8 characters of hash
+            const hashShort = hashHex.substring(0, 8);
+
+            // Generate timestamp prefix YYYYMMDD_HHMMSS
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timestamp = `${year}${month}${day}_${hours}${minutes}${seconds}`;
+
+            // Extract original filename without extension
+            const originalName = file.name.replace(/\.(kml|kmz)$/i, '');
+
+            // Build final filename
+            const hashedFilename = `${timestamp}_${hashShort}_${originalName}.kml`;
+
+            console.log(`[KML-Manager] Generierte Hash-Filename: ${hashedFilename}`);
+
+            return hashedFilename;
+        } catch (error) {
+            console.error('[KML-Manager] Fehler beim Hash-Generieren:', error);
+            // Fallback to simple timestamp-based name
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            return `${timestamp}_${file.name}`;
+        }
+    }
+
+    /**
      * Lädt eine KML-Datei hoch (Server + lokale Speicherung)
      * @param {File} file - KML-Datei
      * @param {string} name - Optionaler Name
@@ -17,13 +63,18 @@ class KmlManager {
      */
     async uploadKml(file, name = null) {
         try {
+            // Generiere Hash-basierten Dateinamen
+            const hashedFilename = name || await this.generateHashedFilename(file);
+
+            console.log(`[KML-Manager] Upload mit Filename: ${hashedFilename}`);
+
             // Versuche Upload zum Server
             let kmlContent = null;
             let uploadedToServer = false;
 
             if (navigator.onLine) {
                 try {
-                    const response = await this.apiClient.uploadKml(file, name);
+                    const response = await this.apiClient.uploadKml(file, hashedFilename);
                     kmlContent = response.kml_content;
                     uploadedToServer = true;
                 } catch (error) {
@@ -38,11 +89,13 @@ class KmlManager {
 
             // Lokal in IndexedDB speichern
             const kmlData = {
-                filename: name || file.name,
+                filename: hashedFilename,
+                originalFilename: file.name,
                 content: kmlContent,
                 size: file.size,
                 uploaded: new Date().toISOString(),
-                syncedToServer: uploadedToServer
+                syncedToServer: uploadedToServer,
+                userUploaded: true // Flag um user-uploads von synced reviere zu unterscheiden
             };
 
             await this.saveKmlLocal(kmlData);
@@ -52,8 +105,8 @@ class KmlManager {
                 filename: kmlData.filename,
                 syncedToServer: uploadedToServer,
                 message: uploadedToServer
-                    ? 'KML hochgeladen und lokal gespeichert'
-                    : 'KML lokal gespeichert (Server nicht erreichbar)'
+                    ? `KML als "${hashedFilename}" hochgeladen und lokal gespeichert`
+                    : `KML als "${hashedFilename}" lokal gespeichert (Server nicht erreichbar)`
             };
 
         } catch (error) {
@@ -167,6 +220,81 @@ class KmlManager {
             console.error('Fehler beim Löschen der KML-Datei:', error);
             return false;
         }
+    }
+
+    /**
+     * Archiviert eine KML-Datei (umbenennen zu .old statt löschen)
+     * @param {string} filename - Dateiname (z.B. "20241107_123456_abcd1234_myfile.kml")
+     * @returns {Promise<Object>} - Ergebnis mit success, archivedFilename, message
+     */
+    async archiveKml(filename) {
+        try {
+            console.log(`[KML-Manager] Archiviere KML-Datei: ${filename}`);
+
+            // Versuche auf Server zu archivieren (rename zu .old)
+            let archivedOnServer = false;
+            if (navigator.onLine) {
+                try {
+                    const response = await this.apiClient.archiveKml(filename);
+                    archivedOnServer = response.success;
+                    console.log(`[KML-Manager] Server-Archivierung: ${response.message}`);
+                } catch (error) {
+                    console.error('[KML-Manager] Server-Archivierung fehlgeschlagen:', error);
+                }
+            }
+
+            // Lokal löschen (wir behalten nur aktive KML-Dateien lokal)
+            const db = await this.dbManager.openDatabase();
+
+            const localDeleted = await new Promise((resolve, reject) => {
+                const transaction = db.transaction(['kmlFiles'], 'readwrite');
+                const store = transaction.objectStore('kmlFiles');
+
+                // Suche nach Filename
+                const index = store.index('filename');
+                const request = index.openCursor(IDBKeyRange.only(filename));
+
+                request.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        cursor.delete();
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                };
+
+                request.onerror = () => reject(request.error);
+            });
+
+            const archivedFilename = filename.replace(/\.kml$/i, '.old');
+
+            return {
+                success: true,
+                archivedFilename,
+                archivedOnServer,
+                localDeleted,
+                message: archivedOnServer
+                    ? `Datei zu "${archivedFilename}" archiviert (auf Server und lokal entfernt)`
+                    : `Datei lokal entfernt (Server-Archivierung fehlgeschlagen)`
+            };
+
+        } catch (error) {
+            console.error('[KML-Manager] Fehler beim Archivieren:', error);
+            return {
+                success: false,
+                message: `Archivierung fehlgeschlagen: ${error.message}`
+            };
+        }
+    }
+
+    /**
+     * Holt alle user-uploaded KML-Dateien (ohne synced Reviere)
+     * @returns {Promise<Array>} - User-uploaded KML-Dateien
+     */
+    async getUserUploadedKmls() {
+        const allKmls = await this.getAllKmlLocal();
+        return allKmls.filter(kml => kml.userUploaded === true);
     }
 
     /**
