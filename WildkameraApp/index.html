@@ -221,7 +221,7 @@
         <div class="header-content">
             <div>
                 <h4 class="header-title">Wildkamera Steuerung</h4>
-                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.07-210000</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: -5px;">v2025.11.07-210500</div>
             </div>
             <ul id="nav-mobile" class="right">
                 <li><a id="serverConfigButton" href="#serverConfigModal" class="modal-trigger" title="Server-Konfiguration"><i class="material-icons">settings_input_antenna</i></a></li>
@@ -780,11 +780,7 @@
           // Initialize Settings Tabs
           M.Tabs.init(document.querySelectorAll('.tabs:not(.main-tabs)'));
 
-          // KML-Upload Handler
-          document.getElementById('uploadKmlBtn').addEventListener('click', () => {
-              document.getElementById('kmlFileInput').click();
-          });
-
+          // KML-Upload File Input Handler (button is in map-view.js control panel)
           document.getElementById('kmlFileInput').addEventListener('change', async (e) => {
               const file = e.target.files[0];
               if (file) {
@@ -805,77 +801,6 @@
                   }
                   // Reset input
                   e.target.value = '';
-              }
-          });
-
-          // Meine Position anzeigen
-          document.getElementById('myLocationBtn').addEventListener('click', async () => {
-              console.log('Position button clicked, map exists:', !!window.mapView.map);
-
-              // Prüfe ob wir im Karten-Tab sind
-              const mapTab = document.getElementById('map-tab');
-              const isMapTabVisible = mapTab && mapTab.style.display !== 'none';
-
-              if (!isMapTabVisible) {
-                  M.toast({ html: 'Bitte wechseln Sie zum Karten-Tab', displayLength: 3000 });
-                  return;
-              }
-
-              // Initialisiere Karte falls noch nicht vorhanden
-              if (!window.mapView.map) {
-                  console.log('Initializing map for position...');
-                  document.body.classList.add('map-tab-active');
-                  window.mapView.initMap('map');
-                  await window.mapView.loadAllBoundaries();
-                  await window.mapView.loadCameraMarkers();
-                  console.log('Map initialized for position:', window.mapView.map);
-              }
-
-              try {
-                  await window.mapView.showCurrentLocation();
-                  M.toast({ html: 'Position ermittelt', displayLength: 2000 });
-              } catch (error) {
-                  console.error('Position error:', error);
-                  M.toast({ html: 'Position konnte nicht ermittelt werden', displayLength: 4000 });
-              }
-          });
-
-          // KML-Sync - Synchronisiere Reviere aus /home/wildkamera/Reviere
-          document.getElementById('syncKmlBtn').addEventListener('click', async () => {
-              if (!navigator.onLine) {
-                  M.toast({ html: '⚠️ Offline - Synchronisation nicht möglich', displayLength: 3000 });
-                  return;
-              }
-
-              M.toast({ html: 'Synchronisiere Reviere...', displayLength: 2000 });
-
-              try {
-                  const result = await window.kmlManager.syncReviere();
-
-                  if (result.success) {
-                      let message = `✓ Reviere synchronisiert`;
-                      if (result.downloaded > 0) {
-                          message += `: ${result.downloaded} neu`;
-                      }
-                      if (result.deleted > 0) {
-                          message += `, ${result.deleted} gelöscht`;
-                      }
-                      if (result.downloaded === 0 && result.deleted === 0) {
-                          message = `✓ Alle Reviere aktuell`;
-                      }
-                      M.toast({ html: message, displayLength: 4000 });
-
-                      // Karte neu laden wenn Änderungen vorhanden
-                      if (window.mapView.map && (result.downloaded > 0 || result.deleted > 0)) {
-                          await window.mapView.loadAllBoundaries();
-                          window.mapView.fitBoundaries();
-                      }
-                  } else {
-                      M.toast({ html: `✗ Sync fehlgeschlagen: ${result.message}`, displayLength: 5000 });
-                  }
-              } catch (error) {
-                  console.error('Sync-Fehler:', error);
-                  M.toast({ html: '✗ Synchronisation fehlgeschlagen', displayLength: 4000 });
               }
           });
 
@@ -968,124 +893,8 @@
               console.log('Swipe navigation enabled: Swipe left/right to switch tabs');
           }
 
-          // Vollbild-Toggle für Karte
-          let isFullscreen = false;
-          const toggleFullscreen = () => {
-              isFullscreen = !isFullscreen;
-              document.body.classList.toggle('map-fullscreen', isFullscreen);
-
-              // Button-Text und Icon aktualisieren
-              const fullscreenBtn = document.getElementById('fullscreenBtn');
-              if (fullscreenBtn) {
-                  if (isFullscreen) {
-                      fullscreenBtn.innerHTML = '<i class="material-icons left">fullscreen_exit</i>Normal';
-                      M.toast({ html: 'Vollbild aktiviert - Wischen zum Wechseln', displayLength: 2000 });
-                  } else {
-                      fullscreenBtn.innerHTML = '<i class="material-icons left">fullscreen</i>Vollbild';
-                      M.toast({ html: 'Vollbild deaktiviert', displayLength: 2000 });
-                  }
-              }
-
-              // Karte neu skalieren
-              if (window.mapView.map) {
-                  setTimeout(() => window.mapView.map.invalidateSize(), 100);
-              }
-          };
-
-          // Labels Toggle Button
-          let labelsVisible = localStorage.getItem('mapLabelsVisible') !== 'false'; // Default: true
-          const toggleLabelsBtn = document.getElementById('toggleLabelsBtn');
-
-          // Initiale Einstellung anwenden
-          if (!labelsVisible) {
-              document.body.classList.add('hide-point-labels');
-              if (toggleLabelsBtn) {
-                  toggleLabelsBtn.classList.remove('purple');
-                  toggleLabelsBtn.classList.add('grey');
-              }
-          }
-
-          toggleLabelsBtn?.addEventListener('click', () => {
-              labelsVisible = !labelsVisible;
-              localStorage.setItem('mapLabelsVisible', labelsVisible);
-
-              if (labelsVisible) {
-                  document.body.classList.remove('hide-point-labels');
-                  toggleLabelsBtn.classList.remove('grey');
-                  toggleLabelsBtn.classList.add('purple');
-                  M.toast({ html: '✓ Labels werden angezeigt', displayLength: 2000 });
-              } else {
-                  document.body.classList.add('hide-point-labels');
-                  toggleLabelsBtn.classList.remove('purple');
-                  toggleLabelsBtn.classList.add('grey');
-                  M.toast({ html: '✓ Labels sind ausgeblendet', displayLength: 2000 });
-              }
-          });
-
-          // Vollbild-Button Event
-          document.getElementById('fullscreenBtn')?.addEventListener('click', toggleFullscreen);
-
-          // Offline-Download Button
-          document.getElementById('downloadOfflineBtn')?.addEventListener('click', async () => {
-              if (!window.mapView.map) {
-                  M.toast({ html: 'Karte nicht geladen', displayLength: 2000 });
-                  return;
-              }
-
-              const bounds = window.mapView.map.getBounds();
-              const currentZoom = window.mapView.map.getZoom();
-
-              // Berechne Download-Größe
-              const estimate = window.offlineMapDownloader.estimateDownloadSize(
-                  bounds,
-                  Math.max(currentZoom - 2, 10),
-                  Math.min(currentZoom + 2, 16)
-              );
-
-              // Bestätigungsdialog
-              const confirmed = confirm(
-                  `Offline-Karten Download:\n\n` +
-                  `Bereich: Aktuelle Ansicht\n` +
-                  `Kacheln: ${estimate.tileCount}\n` +
-                  `Größe: ~${estimate.estimatedSizeMB} MB\n` +
-                  `Zoom-Stufen: ${Math.max(currentZoom - 2, 10)} - ${Math.min(currentZoom + 2, 16)}\n\n` +
-                  `Download starten?`
-              );
-
-              if (!confirmed) return;
-
-              // Hole aktuellen Layer
-              const savedLayer = localStorage.getItem('selectedMapLayer') || 'OpenStreetMap';
-              let layerUrl = '';
-
-              switch(savedLayer) {
-                  case 'OpenStreetMap':
-                      layerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-                      break;
-                  case 'Google Satellite':
-                      layerUrl = 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
-                      break;
-                  case 'Google Hybrid':
-                      layerUrl = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
-                      break;
-                  case 'Esri Satellite':
-                      layerUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-                      break;
-                  case 'OpenTopoMap':
-                      layerUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
-                      break;
-                  default:
-                      layerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-              }
-
-              // Download starten
-              await window.offlineMapDownloader.downloadArea(
-                  bounds,
-                  layerUrl,
-                  Math.max(currentZoom - 2, 10),
-                  Math.min(currentZoom + 2, 16)
-              );
-          });
+          // Note: All map control buttons (Upload, Position, Sync, Labels, Fullscreen, Offline)
+          // are now handled in map-view.js initControlPanel()
 
           // Cache-Statistiken im Kartensteuerungs-Widget anzeigen
           window.addEventListener('offline-download-progress', (e) => {
@@ -1102,7 +911,16 @@
               if (tapLength < 300 && tapLength > 0) {
                   // Doppel-Tap erkannt
                   if (e.target.closest('#map')) {
-                      toggleFullscreen();
+                      // Toggle fullscreen inline
+                      document.body.classList.toggle('map-fullscreen');
+                      if (window.mapView.map) {
+                          setTimeout(() => window.mapView.map.invalidateSize(), 100);
+                      }
+                      const isFullscreen = document.body.classList.contains('map-fullscreen');
+                      M.toast({
+                          html: isFullscreen ? 'Vollbild aktiviert' : 'Vollbild deaktiviert',
+                          displayLength: 2000
+                      });
                   }
               }
               lastTap = currentTime;
