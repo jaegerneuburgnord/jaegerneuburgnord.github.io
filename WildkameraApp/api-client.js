@@ -218,6 +218,17 @@ class ApiClient {
     }
 
     /**
+     * Archiviert eine KML-Datei (rename zu .old statt löschen)
+     * @param {string} filename - Dateiname (z.B. "20241107_123456_abcd1234_myfile.kml")
+     * @returns {Promise<Object>} - Response mit archivedFilename
+     */
+    async archiveKml(filename) {
+        return await this.request(`/kml/archive/${encodeURIComponent(filename)}`, {
+            method: 'POST'
+        });
+    }
+
+    /**
      * Holt das SMS-Log vom Server
      * @param {number} limit - Maximale Anzahl Einträge
      * @returns {Promise<Object>} - Log-Einträge
