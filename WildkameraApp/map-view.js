@@ -1092,20 +1092,31 @@ class MapView {
             // Versuche Kamera-Status vom Server zu laden (aus txtFiles)
             let cameras = [];
 
+            console.log(`[MapView] Lade Kamera-Marker... (Online: ${navigator.onLine})`);
+
             if (navigator.onLine) {
                 try {
+                    console.log('[MapView] Rufe /cameras/status Endpoint auf...');
                     const response = await window.apiClient.getCameraStatus(7, true);
+                    console.log('[MapView] Server-Response:', response);
+
                     if (response.success) {
                         cameras = response.cameras;
-                        console.log(`[MapView] ${cameras.length} Kameras vom Server geladen (gefiltert nach Polygon)`);
+                        console.log(`[MapView] ✓ ${cameras.length} Kameras vom Server geladen (gefiltert nach Polygon)`);
+                        console.log('[MapView] Erste Kamera:', cameras[0]);
+                    } else {
+                        console.warn('[MapView] Server-Response nicht erfolgreich:', response);
                     }
                 } catch (error) {
-                    console.warn('[MapView] Fehler beim Laden vom Server, verwende DB-Fallback:', error);
+                    console.error('[MapView] ✗ Fehler beim Laden vom Server, verwende DB-Fallback:', error);
                 }
+            } else {
+                console.log('[MapView] Offline - überspringe Server-Anfrage');
             }
 
             // Fallback: Lade aus lokaler DB wenn Server nicht verfügbar
             if (cameras.length === 0) {
+                console.log('[MapView] Lade Kameras aus lokaler Datenbank (Fallback)...');
                 const dbCameras = await window.dbManager.getAllCameras();
                 cameras = dbCameras.filter(c => c.location && c.location.lat && c.location.lng)
                     .map(c => ({
@@ -1117,8 +1128,10 @@ class MapView {
                         temperature: null,
                         from_db: true
                     }));
-                console.log(`[MapView] ${cameras.length} Kameras aus DB geladen (Fallback)`);
+                console.log(`[MapView] ✓ ${cameras.length} Kameras aus DB geladen (Fallback)`);
             }
+
+            console.log(`[MapView] Starte Marker-Erstellung für ${cameras.length} Kameras...`);
 
             for (const camera of cameras) {
                 // Skip cameras without GPS
@@ -1193,14 +1206,18 @@ class MapView {
 
                 this.cameraMarkers[camera.imei || camera.cam_id] = marker;
 
-                // Add to camera list in control panel
+                // WICHTIG: Marker IMMER zur Karte hinzufügen (nicht nur wenn cameraListContainer existiert)
+                marker.addTo(this.map);
+                console.log(`[MapView] Kamera-Marker hinzugefügt: ${camera.cam_id} bei ${camera.latitude}, ${camera.longitude}`);
+
+                // Add to camera list in control panel (optional)
                 if (cameraListContainer) {
                     const cameraItem = document.createElement('div');
                     cameraItem.className = 'map-layer-item map-camera-item';
                     cameraItem.innerHTML = `
                         <label>
-                            <input type="checkbox" id="camera-${camera.id}" checked>
-                            <span>${camera.name}</span>
+                            <input type="checkbox" id="camera-${camera.imei || camera.cam_id}" checked>
+                            <span>${camera.cam_id || 'Kamera'}</span>
                         </label>
                     `;
 
@@ -1215,23 +1232,22 @@ class MapView {
 
                     cameraItem.addEventListener('click', (e) => {
                         if (e.target.tagName !== 'INPUT') {
-                            this.map.setView([camera.location.lat, camera.location.lng], 15);
+                            this.map.setView([camera.latitude, camera.longitude], 15);
                             marker.openPopup();
                         }
                     });
 
                     cameraListContainer.appendChild(cameraItem);
-
-                    // Add marker to map by default
-                    marker.addTo(this.map);
                 }
             }
+
+            console.log(`[MapView] ✓ ${cameraCount} Kamera-Marker zur Karte hinzugefügt`);
 
             // Auto-Zoom auf Kameras wenn keine Boundaries vorhanden
             if (cameraCount > 0 && Object.keys(this.boundaryLayers).length === 0) {
                 setTimeout(() => {
                     this.fitCameraMarkers();
-                    console.log(`Auto-zoomed to ${cameraCount} cameras (no boundaries found)`);
+                    console.log(`[MapView] Auto-Zoom auf ${cameraCount} Kameras (keine Boundaries gefunden)`);
                 }, 200);
             }
 
