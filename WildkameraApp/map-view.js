@@ -334,8 +334,28 @@ class MapView {
             }
 
             for (const kmlFile of kmlFiles) {
-                const layerName = kmlFile.name;
+                // Verwende filename (von Upload) oder name (alte Daten) - Fallback zu "Unbenannt"
+                const layerName = kmlFile.filename || kmlFile.name || 'Unbenannt';
+
+                console.log(`[MapView] Lade Boundary: ${layerName}`, {
+                    hasContent: !!kmlFile.content,
+                    contentLength: kmlFile.content?.length,
+                    revier: kmlFile.revier
+                });
+
+                if (!kmlFile.content) {
+                    console.warn(`[MapView] KML-Datei ${layerName} hat keinen Content!`);
+                    continue;
+                }
+
                 const polygons = this.kmlManager.parseKmlCoordinates(kmlFile.content);
+
+                console.log(`[MapView] ${layerName}: ${polygons.length} Polygone gefunden`);
+
+                if (polygons.length === 0) {
+                    console.warn(`[MapView] Keine Polygone in ${layerName} gefunden!`);
+                    continue;
+                }
 
                 // Create layer group
                 const layerGroup = L.layerGroup();
@@ -402,14 +422,18 @@ class MapView {
             if (boundaryCount > 0) {
                 setTimeout(() => {
                     this.fitBoundaries();
-                    console.log(`Auto-zoomed to ${boundaryCount} boundaries`);
+                    console.log(`[MapView] Auto-zoomed to ${boundaryCount} boundaries`);
                 }, 200);
+            } else {
+                console.warn('[MapView] Keine Boundaries zum Anzeigen gefunden!');
             }
+
+            console.log(`[MapView] loadAllBoundaries abgeschlossen: ${boundaryCount} Boundaries, ${Object.keys(this.boundaryLayers).length} Layers`);
 
             return boundaryCount;
 
         } catch (error) {
-            console.error('Fehler beim Laden der Reviergrenzen:', error);
+            console.error('[MapView] Fehler beim Laden der Reviergrenzen:', error);
             return 0;
         }
     }
