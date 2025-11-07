@@ -456,17 +456,19 @@ class KmlManager {
                         console.log(`[KML-Parser]   -> Style gefunden:`, placemarkStyle);
                     }
 
-                    // Sammle alle Polygon-Elemente (egal wo sie verschachtelt sind)
+                    // Sammle alle Geometrie-Elemente
                     const polygonElements = placemark.getElementsByTagName('Polygon');
+                    const lineStringElements = placemark.getElementsByTagName('LineString');
+                    const pointElements = placemark.getElementsByTagName('Point');
 
-                    console.log(`[KML-Parser]   -> ${polygonElements.length} Polygon-Elemente gefunden`);
+                    console.log(`[KML-Parser]   -> Geometrien: ${polygonElements.length} Polygone, ${lineStringElements.length} LineStrings, ${pointElements.length} Points`);
 
-                    // Verarbeite jedes Polygon
+                    let geometryFound = false;
+
+                    // Verarbeite Polygone
                     for (let j = 0; j < polygonElements.length; j++) {
                         try {
                             const polygonElement = polygonElements[j];
-
-                            // Suche nach coordinates in outerBoundaryIs oder direkt im Polygon
                             let coordsElement = null;
 
                             // Methode 1: outerBoundaryIs > LinearRing > coordinates
@@ -475,34 +477,28 @@ class KmlManager {
                                 const linearRing = outerBoundary.getElementsByTagName('LinearRing')[0];
                                 if (linearRing) {
                                     coordsElement = linearRing.getElementsByTagName('coordinates')[0];
-                                    console.log(`[KML-Parser]   -> Polygon ${j + 1}: gefunden via outerBoundaryIs/LinearRing`);
                                 }
                             }
 
                             // Methode 2: Direkt coordinates im Polygon
                             if (!coordsElement) {
                                 coordsElement = polygonElement.getElementsByTagName('coordinates')[0];
-                                if (coordsElement) {
-                                    console.log(`[KML-Parser]   -> Polygon ${j + 1}: gefunden via direktes coordinates`);
-                                }
                             }
 
                             if (coordsElement) {
                                 const coordsText = coordsElement.textContent.trim();
-                                console.log(`[KML-Parser]   -> Koordinaten-Text Länge: ${coordsText.length} Zeichen`);
-
                                 const coords = this.parseCoordinatesText(coordsText);
 
                                 if (coords.length > 0) {
-                                    // Bei mehreren Polygonen füge Nummer zum Namen hinzu
-                                    const polygonName = polygonElements.length > 1
+                                    const geometryName = polygonElements.length > 1
                                         ? `${placemarkName} (${j + 1})`
                                         : placemarkName;
 
-                                    console.log(`[KML-Parser]   -> ✓ Polygon "${polygonName}" mit ${coords.length} Koordinaten hinzugefügt`);
+                                    console.log(`[KML-Parser]   -> ✓ Polygon "${geometryName}" mit ${coords.length} Koordinaten`);
 
                                     polygons.push({
-                                        name: polygonName,
+                                        type: 'Polygon',
+                                        name: geometryName,
                                         description: description,
                                         coordinates: coords,
                                         style: placemarkStyle,
@@ -510,30 +506,89 @@ class KmlManager {
                                     });
 
                                     successCount++;
-                                } else {
-                                    console.warn(`[KML-Parser]   -> ✗ Polygon ${j + 1}: Keine gültigen Koordinaten gefunden!`);
-                                    errorCount++;
+                                    geometryFound = true;
                                 }
-                            } else {
-                                console.warn(`[KML-Parser]   -> ✗ Polygon ${j + 1}: Kein coordinates-Element gefunden!`);
-                                errorCount++;
                             }
-                        } catch (polygonError) {
-                            console.error(`[KML-Parser]   -> ✗ FEHLER beim Verarbeiten von Polygon ${j + 1}:`, polygonError);
+                        } catch (error) {
+                            console.error(`[KML-Parser]   -> ✗ FEHLER beim Polygon ${j + 1}:`, error);
                             errorCount++;
                         }
                     }
 
-                    // Falls keine Polygon-Elemente gefunden wurden, prüfe auf andere Geometrien
-                    if (polygonElements.length === 0) {
-                        const hasPoint = placemark.getElementsByTagName('Point').length > 0;
-                        const hasLineString = placemark.getElementsByTagName('LineString').length > 0;
+                    // Verarbeite LineStrings
+                    for (let j = 0; j < lineStringElements.length; j++) {
+                        try {
+                            const lineStringElement = lineStringElements[j];
+                            const coordsElement = lineStringElement.getElementsByTagName('coordinates')[0];
 
-                        if (hasPoint || hasLineString) {
-                            console.log(`[KML-Parser]   -> Placemark enthält ${hasPoint ? 'Point' : 'LineString'} (wird übersprungen)`);
-                        } else {
-                            console.warn(`[KML-Parser]   -> Placemark enthält keine erkannten Geometrien!`);
+                            if (coordsElement) {
+                                const coordsText = coordsElement.textContent.trim();
+                                const coords = this.parseCoordinatesText(coordsText);
+
+                                if (coords.length > 0) {
+                                    const geometryName = lineStringElements.length > 1
+                                        ? `${placemarkName} (${j + 1})`
+                                        : placemarkName;
+
+                                    console.log(`[KML-Parser]   -> ✓ LineString "${geometryName}" mit ${coords.length} Punkten`);
+
+                                    polygons.push({
+                                        type: 'LineString',
+                                        name: geometryName,
+                                        description: description,
+                                        coordinates: coords,
+                                        style: placemarkStyle,
+                                        folder: folderName
+                                    });
+
+                                    successCount++;
+                                    geometryFound = true;
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`[KML-Parser]   -> ✗ FEHLER beim LineString ${j + 1}:`, error);
+                            errorCount++;
                         }
+                    }
+
+                    // Verarbeite Points
+                    for (let j = 0; j < pointElements.length; j++) {
+                        try {
+                            const pointElement = pointElements[j];
+                            const coordsElement = pointElement.getElementsByTagName('coordinates')[0];
+
+                            if (coordsElement) {
+                                const coordsText = coordsElement.textContent.trim();
+                                const coords = this.parseCoordinatesText(coordsText);
+
+                                if (coords.length > 0) {
+                                    const geometryName = pointElements.length > 1
+                                        ? `${placemarkName} (${j + 1})`
+                                        : placemarkName;
+
+                                    console.log(`[KML-Parser]   -> ✓ Point "${geometryName}"`);
+
+                                    polygons.push({
+                                        type: 'Point',
+                                        name: geometryName,
+                                        description: description,
+                                        coordinates: coords,
+                                        style: placemarkStyle,
+                                        folder: folderName
+                                    });
+
+                                    successCount++;
+                                    geometryFound = true;
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`[KML-Parser]   -> ✗ FEHLER beim Point ${j + 1}:`, error);
+                            errorCount++;
+                        }
+                    }
+
+                    if (!geometryFound) {
+                        console.warn(`[KML-Parser]   -> ✗ Keine unterstützten Geometrien gefunden!`);
                     }
                 } catch (placemarkError) {
                     console.error(`[KML-Parser] ✗ FEHLER beim Verarbeiten von Placemark ${i + 1}:`, placemarkError);
@@ -543,10 +598,18 @@ class KmlManager {
                 }
             }
 
+            // Zähle Geometrie-Typen
+            const polygonCount = polygons.filter(p => p.type === 'Polygon').length;
+            const lineStringCount = polygons.filter(p => p.type === 'LineString').length;
+            const pointCount = polygons.filter(p => p.type === 'Point').length;
+
             console.log(`[KML-Parser] ═══════════════════════════════════════`);
             console.log(`[KML-Parser] ✓ ZUSAMMENFASSUNG:`);
             console.log(`[KML-Parser]   - ${placemarks.length} Placemarks verarbeitet`);
-            console.log(`[KML-Parser]   - ${successCount} Polygone erfolgreich extrahiert`);
+            console.log(`[KML-Parser]   - ${successCount} Geometrien erfolgreich extrahiert:`);
+            if (polygonCount > 0) console.log(`[KML-Parser]     • ${polygonCount} Polygone`);
+            if (lineStringCount > 0) console.log(`[KML-Parser]     • ${lineStringCount} LineStrings`);
+            if (pointCount > 0) console.log(`[KML-Parser]     • ${pointCount} Points`);
             if (errorCount > 0) {
                 console.log(`[KML-Parser]   - ${errorCount} Fehler aufgetreten`);
             }

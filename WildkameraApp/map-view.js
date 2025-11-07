@@ -348,50 +348,84 @@ class MapView {
                     continue;
                 }
 
-                const polygons = this.kmlManager.parseKmlCoordinates(kmlFile.content);
+                const geometries = this.kmlManager.parseKmlCoordinates(kmlFile.content);
 
-                console.log(`[MapView] ${layerName}: ${polygons.length} Polygone gefunden`);
+                console.log(`[MapView] ${layerName}: ${geometries.length} Geometrien gefunden`);
 
-                if (polygons.length === 0) {
-                    console.warn(`[MapView] Keine Polygone in ${layerName} gefunden!`);
+                if (geometries.length === 0) {
+                    console.warn(`[MapView] Keine Geometrien in ${layerName} gefunden!`);
                     continue;
                 }
 
                 // Create layer group
                 const layerGroup = L.layerGroup();
 
-                for (const polygon of polygons) {
-                    // Verwende KML-Style falls vorhanden, sonst zufällige Farbe
-                    const defaultColor = this.getRandomColor();
-                    const polygonStyle = {
-                        color: polygon.style?.color || defaultColor,
-                        weight: polygon.style?.weight || 2,
-                        fillOpacity: polygon.style?.fillOpacity !== undefined ? polygon.style.fillOpacity : 0.2
-                    };
+                for (const geometry of geometries) {
+                    try {
+                        // Verwende KML-Style falls vorhanden, sonst zufällige Farbe
+                        const defaultColor = this.getRandomColor();
+                        const style = {
+                            color: geometry.style?.color || defaultColor,
+                            weight: geometry.style?.weight || 2,
+                            fillOpacity: geometry.style?.fillOpacity !== undefined ? geometry.style.fillOpacity : 0.2
+                        };
 
-                    console.log(`[MapView] Erstelle Polygon "${polygon.name}" mit Style:`, polygonStyle);
+                        console.log(`[MapView] Erstelle ${geometry.type} "${geometry.name}" mit Style:`, style);
 
-                    const latLngs = polygon.coordinates.map(coord => [coord[1], coord[0]]);
-                    const leafletPolygon = L.polygon(latLngs, polygonStyle);
+                        let leafletLayer = null;
 
-                    // Popup mit Name und optional Description
-                    let popupContent = `<b>${polygon.name}</b>`;
-                    if (polygon.description) {
-                        popupContent += `<br><i>${polygon.description}</i>`;
+                        // Erstelle entsprechenden Leaflet-Layer basierend auf Geometrie-Typ
+                        if (geometry.type === 'Polygon') {
+                            const latLngs = geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                            leafletLayer = L.polygon(latLngs, style);
+                        } else if (geometry.type === 'LineString') {
+                            const latLngs = geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                            leafletLayer = L.polyline(latLngs, {
+                                color: style.color,
+                                weight: style.weight
+                            });
+                        } else if (geometry.type === 'Point') {
+                            // Point hat nur eine Koordinate
+                            const coord = geometry.coordinates[0];
+                            const latLng = [coord[1], coord[0]];
+
+                            // Verwende CircleMarker für bessere Sichtbarkeit
+                            leafletLayer = L.circleMarker(latLng, {
+                                color: style.color,
+                                fillColor: style.color,
+                                fillOpacity: 0.7,
+                                radius: 6,
+                                weight: 2
+                            });
+                        }
+
+                        if (leafletLayer) {
+                            // Popup mit Name und optional Description
+                            let popupContent = `<b>${geometry.name}</b>`;
+                            if (geometry.type) {
+                                popupContent += `<br><small>Typ: ${geometry.type}</small>`;
+                            }
+                            if (geometry.description) {
+                                popupContent += `<br><i>${geometry.description}</i>`;
+                            }
+                            leafletLayer.bindPopup(popupContent);
+
+                            layerGroup.addLayer(leafletLayer);
+
+                            // Add to search index
+                            this.searchIndex.push({
+                                name: geometry.name || 'Unbenannt',
+                                description: geometry.description || '',
+                                type: geometry.type,
+                                layer: leafletLayer,
+                                parentLayer: layerName
+                            });
+
+                            boundaryCount++;
+                        }
+                    } catch (error) {
+                        console.error(`[MapView] Fehler beim Erstellen von "${geometry.name}":`, error);
                     }
-                    leafletPolygon.bindPopup(popupContent);
-
-                    layerGroup.addLayer(leafletPolygon);
-
-                    // Add to search index
-                    this.searchIndex.push({
-                        name: polygon.name || 'Unbenannt',
-                        description: polygon.description || '',
-                        layer: leafletPolygon,
-                        parentLayer: layerName
-                    });
-
-                    boundaryCount++;
                 }
 
                 this.boundaryLayers[layerName] = layerGroup;
