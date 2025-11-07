@@ -18,6 +18,7 @@ class MapView {
         this.cameraMarkers = {};
         this.baseLayers = {};  // Verschiedene Karten-Layer
         this.currentLayer = null;  // Aktuell aktiver Layer
+        this.styleUrlColorMap = {};  // Maps styleUrl zu Farbe (für konsistente Farbzuweisung)
     }
 
     /**
@@ -362,8 +363,14 @@ class MapView {
 
                 for (const geometry of geometries) {
                     try {
-                        // Verwende KML-Style falls vorhanden, sonst zufällige Farbe
-                        const defaultColor = this.getRandomColor();
+                        // Verwende Farbe basierend auf StyleURL (gleiche StyleURL = gleiche Farbe)
+                        let defaultColor;
+                        if (geometry.type === 'Point' && geometry.styleUrl) {
+                            defaultColor = this.getColorForStyleUrl(geometry.styleUrl);
+                        } else {
+                            defaultColor = this.getRandomColor();
+                        }
+
                         const style = {
                             color: geometry.style?.color || defaultColor,
                             weight: geometry.style?.weight || 2,
@@ -397,6 +404,16 @@ class MapView {
                                 radius: 6,
                                 weight: 2
                             });
+
+                            // Füge permanentes Label über dem Punkt hinzu
+                            if (geometry.name) {
+                                leafletLayer.bindTooltip(geometry.name, {
+                                    permanent: true,
+                                    direction: 'top',
+                                    className: 'point-label',
+                                    offset: [0, -10]
+                                });
+                            }
                         }
 
                         if (leafletLayer) {
@@ -884,15 +901,57 @@ class MapView {
      * @returns {string} - Hex-Farbe
      */
     getRandomColor() {
+        // Optimierte Farbpalette für Kartenhintergründe
+        // Entfernt: Grün-, Blau-, Cyan-, Grautöne (schlechter Kontrast auf Karten)
+        // Behalten: Rot, Pink, Orange, Gelb, Violett (guter Kontrast)
         const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
-            '#98D8C8', '#6C5CE7', '#FDCB6E', '#E17055',
-            '#00B894', '#0984E3', '#6C5CE7', '#FD79A8',
-            '#FDCB6E', '#E17055', '#74B9FF', '#A29BFE',
-            '#FF7675', '#55EFC4', '#81ECEC', '#FAB1A0',
-            '#DFE6E9', '#00CEC9', '#B2BEC3', '#FFEAA7'
+            '#FF6B6B', // Rot
+            '#FF7675', // Hellrot
+            '#FF3838', // Kräftiges Rot
+            '#FFA07A', // Lachs
+            '#FF6348', // Tomatenrot
+            '#E17055', // Koralle
+            '#FD79A8', // Pink
+            '#FF69B4', // Hot Pink
+            '#FF1493', // Deep Pink
+            '#6C5CE7', // Lila
+            '#A29BFE', // Hellviolett
+            '#8B00FF', // Violett
+            '#FDCB6E', // Gelb
+            '#FFD700', // Gold
+            '#FFEAA7', // Hellgelb
+            '#FFA500', // Orange
+            '#FF8C00', // Dark Orange
+            '#FAB1A0', // Pfirsich
+            '#DC143C', // Crimson
+            '#C71585'  // Medium Violet Red
         ];
         return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    /**
+     * Gibt eine konsistente Farbe für eine StyleURL zurück
+     * Gleiche StyleURL = gleiche Farbe (wird gecached)
+     * @param {string} styleUrl - StyleURL aus KML
+     * @returns {string} - Hex-Farbe
+     */
+    getColorForStyleUrl(styleUrl) {
+        if (!styleUrl) {
+            return this.getRandomColor();
+        }
+
+        // Wenn wir diese StyleURL schon kennen, gib die gleiche Farbe zurück
+        if (this.styleUrlColorMap[styleUrl]) {
+            return this.styleUrlColorMap[styleUrl];
+        }
+
+        // Neue StyleURL: generiere Farbe und cache sie
+        const color = this.getRandomColor();
+        this.styleUrlColorMap[styleUrl] = color;
+
+        console.log(`[MapView] Neue StyleURL "${styleUrl}" -> Farbe ${color}`);
+
+        return color;
     }
 
     /**

@@ -433,14 +433,15 @@ class KmlManager {
                     const nameElement = placemark.getElementsByTagName('name')[0];
                     let placemarkName = nameElement ? nameElement.textContent.trim() : `Unbenannt ${i + 1}`;
 
-                    // Wenn in Folder, füge Folder-Name als Präfix hinzu
-                    if (folderName && !placemarkName.startsWith(folderName)) {
-                        placemarkName = `${folderName} - ${placemarkName}`;
-                    }
+                    // Folder-Name wird nicht als Präfix verwendet (nur für Logging)
 
                     // Description extrahieren
                     const descriptionElement = placemark.getElementsByTagName('description')[0];
                     const description = descriptionElement ? descriptionElement.textContent.trim() : null;
+
+                    // StyleURL extrahieren (für gemeinsame Farbzuweisung)
+                    const styleUrlElement = placemark.getElementsByTagName('styleUrl')[0];
+                    const styleUrl = styleUrlElement ? styleUrlElement.textContent.trim() : null;
 
                     // Style extrahieren
                     const placemarkStyle = this.extractStyle(placemark);
@@ -502,6 +503,7 @@ class KmlManager {
                                         description: description,
                                         coordinates: coords,
                                         style: placemarkStyle,
+                                        styleUrl: styleUrl,
                                         folder: folderName
                                     });
 
@@ -538,6 +540,7 @@ class KmlManager {
                                         description: description,
                                         coordinates: coords,
                                         style: placemarkStyle,
+                                        styleUrl: styleUrl,
                                         folder: folderName
                                     });
 
@@ -574,6 +577,7 @@ class KmlManager {
                                         description: description,
                                         coordinates: coords,
                                         style: placemarkStyle,
+                                        styleUrl: styleUrl,
                                         folder: folderName
                                     });
 
