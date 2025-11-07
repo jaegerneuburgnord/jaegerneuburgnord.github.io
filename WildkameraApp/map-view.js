@@ -253,6 +253,9 @@ class MapView {
             labelsVisible = !labelsVisible;
             localStorage.setItem('mapLabelsVisible', labelsVisible);
 
+            console.log(`[MapView] Labels Toggle: ${labelsVisible ? 'SICHTBAR' : 'AUSGEBLENDET'}`);
+            console.log(`[MapView] Body-Klasse "hide-point-labels":`, document.body.classList.contains('hide-point-labels'));
+
             if (labelsVisible) {
                 document.body.classList.remove('hide-point-labels');
                 toggleLabelsBtn.classList.remove('grey');
@@ -264,6 +267,8 @@ class MapView {
                 toggleLabelsBtn.classList.add('grey');
                 M.toast({ html: '✓ Labels sind ausgeblendet', displayLength: 2000 });
             }
+
+            console.log(`[MapView] Nach Toggle - Body-Klasse "hide-point-labels":`, document.body.classList.contains('hide-point-labels'));
         });
 
         // Fullscreen button
