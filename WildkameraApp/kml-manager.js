@@ -433,10 +433,7 @@ class KmlManager {
                     const nameElement = placemark.getElementsByTagName('name')[0];
                     let placemarkName = nameElement ? nameElement.textContent.trim() : `Unbenannt ${i + 1}`;
 
-                    // Wenn in Folder, füge Folder-Name als Präfix hinzu
-                    if (folderName && !placemarkName.startsWith(folderName)) {
-                        placemarkName = `${folderName} - ${placemarkName}`;
-                    }
+                    // Folder-Name wird nicht als Präfix verwendet (nur für Logging)
 
                     // Description extrahieren
                     const descriptionElement = placemark.getElementsByTagName('description')[0];
