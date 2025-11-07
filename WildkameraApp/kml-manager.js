@@ -170,7 +170,133 @@ class KmlManager {
     }
 
     /**
-     * Synchronisiert KML-Dateien mit dem Server
+     * Synchronisiert KMZ-Dateien aus /home/wildkamera/Reviere mit dem Client
+     * Server ist Ground Truth - verwendet Hash-basierte Synchronisation
+     * @returns {Promise<Object>} - Sync-Ergebnis
+     */
+    async syncReviere() {
+        if (!navigator.onLine) {
+            return { success: false, message: 'Offline - Synchronisation nicht möglich' };
+        }
+
+        try {
+            console.log('[KML-Manager] Starte Reviere-Synchronisation...');
+
+            // Hole alle lokalen KMZ-Dateien mit Hashes
+            const localKmls = await this.getAllKmlLocal();
+            const localHashes = localKmls
+                .filter(kml => kml.hash)
+                .map(kml => kml.hash);
+
+            console.log(`[KML-Manager] Lokale Dateien: ${localKmls.length}, Hashes: ${localHashes.length}`);
+
+            // Hole Server-Liste
+            const serverUrl = this.apiClient.getServerUrl();
+            const response = await fetch(`${serverUrl}/reviere/kmz/list`);
+
+            if (!response.ok) {
+                throw new Error(`Server-Fehler: ${response.status}`);
+            }
+
+            const serverData = await response.json();
+            const serverFiles = serverData.files || [];
+
+            console.log(`[KML-Manager] Server-Dateien: ${serverFiles.length}`);
+
+            let downloaded = 0;
+            let skipped = 0;
+            let deleted = 0;
+            let errors = 0;
+
+            // Download neue/geänderte Dateien vom Server
+            for (const serverFile of serverFiles) {
+                // Prüfe ob wir die Datei bereits haben (Hash-Vergleich)
+                const localFile = localKmls.find(lk => lk.hash === serverFile.hash);
+
+                if (localFile) {
+                    skipped++;
+                    console.log(`[KML-Manager] Übersprungen (bereits vorhanden): ${serverFile.filename}`);
+                    continue;
+                }
+
+                try {
+                    console.log(`[KML-Manager] Lade herunter: ${serverFile.filename} (${serverFile.revier})`);
+
+                    // Extrahiere KML aus KMZ
+                    const extractResponse = await fetch(
+                        `${serverUrl}/reviere/kmz/extract?file_hash=${serverFile.hash}`
+                    );
+
+                    if (!extractResponse.ok) {
+                        throw new Error(`Extraktion fehlgeschlagen: ${extractResponse.status}`);
+                    }
+
+                    const extractData = await extractResponse.json();
+
+                    // Speichere lokal mit Hash
+                    await this.saveKmlLocal({
+                        filename: serverFile.filename,
+                        revier: serverFile.revier,
+                        content: extractData.kml_content,
+                        size: serverFile.size,
+                        uploaded: serverFile.modified,
+                        hash: serverFile.hash,
+                        syncedFromReviere: true,
+                        lastSync: new Date().toISOString()
+                    });
+
+                    downloaded++;
+                    console.log(`[KML-Manager] Heruntergeladen: ${serverFile.filename}`);
+
+                } catch (error) {
+                    console.error(`[KML-Manager] Fehler beim Download von ${serverFile.filename}:`, error);
+                    errors++;
+                }
+            }
+
+            // Lösche lokale Dateien, die auf dem Server nicht mehr existieren
+            const serverHashes = serverFiles.map(sf => sf.hash);
+
+            for (const localKml of localKmls) {
+                if (localKml.syncedFromReviere && localKml.hash && !serverHashes.includes(localKml.hash)) {
+                    try {
+                        console.log(`[KML-Manager] Lösche (nicht mehr auf Server): ${localKml.filename}`);
+                        await this.deleteKml(localKml.filename);
+                        deleted++;
+                    } catch (error) {
+                        console.error(`[KML-Manager] Fehler beim Löschen von ${localKml.filename}:`, error);
+                    }
+                }
+            }
+
+            const message = `Reviere-Sync: ${downloaded} neu, ${skipped} aktuell, ${deleted} gelöscht`;
+            console.log(`[KML-Manager] ${message}`);
+
+            if (errors > 0) {
+                console.warn(`[KML-Manager] ${errors} Fehler aufgetreten`);
+            }
+
+            return {
+                success: true,
+                downloaded,
+                skipped,
+                deleted,
+                errors,
+                total_server_files: serverFiles.length,
+                message
+            };
+
+        } catch (error) {
+            console.error('[KML-Manager] Fehler beim Synchronisieren:', error);
+            return {
+                success: false,
+                message: `Sync fehlgeschlagen: ${error.message}`
+            };
+        }
+    }
+
+    /**
+     * Synchronisiert KML-Dateien mit dem Server (alte Methode für manuelles Upload)
      * @returns {Promise<Object>} - Sync-Ergebnis
      */
     async syncWithServer() {
