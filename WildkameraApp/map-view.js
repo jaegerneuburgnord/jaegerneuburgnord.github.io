@@ -701,11 +701,8 @@ class MapView {
                         }
 
                         if (leafletLayer) {
-                            // Popup mit Name und optional Description
+                            // Popup mit Name und optional Description (ohne Typ und Folder)
                             let popupContent = `<b>${geometry.name}</b>`;
-                            if (geometry.type) {
-                                popupContent += `<br><small>Typ: ${geometry.type}</small>`;
-                            }
                             if (geometry.description) {
                                 popupContent += `<br><i>${geometry.description}</i>`;
                             }
