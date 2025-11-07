@@ -1,0 +1,1440 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>05.22 Reviere Ried und Unterstall mit Jagdeinrichtung</name>
+    <description/>
+    <Style id="icon-1899-DB4436-normal">
+      <IconStyle>
+        <color>ff3644db</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1899-DB4436-highlight">
+      <IconStyle>
+        <color>ff3644db</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1899-DB4436">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-DB4436-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-DB4436-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-F9A825-2550-normal">
+      <LineStyle>
+        <color>ff25a8f9</color>
+        <width>2.55</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-F9A825-2550-highlight">
+      <LineStyle>
+        <color>ff25a8f9</color>
+        <width>3.825</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-F9A825-2550">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-F9A825-2550-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-F9A825-2550-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-FF5252-2901-0-normal">
+      <LineStyle>
+        <color>ff5252ff</color>
+        <width>2.901</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>005252ff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <Style id="poly-FF5252-2901-0-highlight">
+      <LineStyle>
+        <color>ff5252ff</color>
+        <width>4.3515</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>005252ff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <StyleMap id="poly-FF5252-2901-0">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-FF5252-2901-0-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-FF5252-2901-0-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Folder>
+      <name>Reviergrenze Ried</name>
+      <Placemark>
+        <name/>
+        <description><![CDATA[Reviermarkierung Ried<br><br>type: linepolygon]]></description>
+        <styleUrl>#poly-FF5252-2901-0</styleUrl>
+        <ExtendedData>
+          <Data name="type">
+            <value>linepolygon</value>
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                11.197892,48.754262,0
+                11.197799,48.755794,0
+                11.19659,48.756122,0
+                11.1965683,48.7560604,0
+                11.19645,48.755914,0
+                11.196187,48.755686,0
+                11.1956152,48.7566462,0
+                11.195022,48.757663,0
+                11.194439,48.757542,0
+                11.193221,48.759269,0
+                11.1924943,48.7601,0
+                11.191671,48.760931,0
+                11.1909754,48.7615065,0
+                11.190151,48.76199,0
+                11.190033,48.7620562,0
+                11.189915,48.762186,0
+                11.189585,48.762521,0
+                11.18896,48.762885,0
+                11.188414,48.763367,0
+                11.187324,48.763626,0
+                11.188122,48.764269,0
+                11.188585,48.765036,0
+                11.187963,48.765485,0
+                11.187566,48.76599,0
+                11.187245,48.766505,0
+                11.187196,48.7667603,0
+                11.1871716,48.7668915,0
+                11.18719,48.766952,0
+                11.185515,48.767373,0
+                11.18396,48.767963,0
+                11.183575,48.768136,0
+                11.180543,48.768841,0
+                11.179724,48.769061,0
+                11.179099,48.769131,0
+                11.178097,48.768816,0
+                11.1767833,48.7689346,0
+                11.175475,48.769044,0
+                11.174741,48.769389,0
+                11.1754675,48.7700181,0
+                11.176278,48.771042,0
+                11.175414,48.770534,0
+                11.174135,48.7705,0
+                11.173203,48.770663,0
+                11.172222,48.770944,0
+                11.171163,48.771356,0
+                11.170256,48.771738,0
+                11.169916,48.772237,0
+                11.169889,48.772713,0
+                11.169079,48.772425,0
+                11.167726,48.771728,0
+                11.164153,48.769688,0
+                11.161396,48.769515,0
+                11.160067,48.769363,0
+                11.158311,48.769311,0
+                11.158206,48.769657,0
+                11.156243,48.769382,0
+                11.155522,48.769355,0
+                11.154843,48.76922,0
+                11.15428,48.769108,0
+                11.154392,48.768697,0
+                11.154779,48.768292,0
+                11.154756,48.767715,0
+                11.154962,48.767556,0
+                11.155311,48.76749,0
+                11.155159,48.767168,0
+                11.155376,48.765986,0
+                11.155674,48.765008,0
+                11.152357,48.76452,0
+                11.152627,48.763698,0
+                11.152721,48.762363,0
+                11.152789,48.761878,0
+                11.153009,48.761247,0
+                11.15427,48.760723,0
+                11.154431,48.760529,0
+                11.154654,48.760145,0
+                11.154789,48.759912,0
+                11.154834,48.759552,0
+                11.154828,48.75914,0
+                11.1548,48.75885,0
+                11.155101,48.758141,0
+                11.157418,48.757564,0
+                11.157673,48.757241,0
+                11.158301,48.757345,0
+                11.159276,48.7559,0
+                11.158573,48.755539,0
+                11.15995,48.754387,0
+                11.159966,48.754179,0
+                11.160311,48.753982,0
+                11.160464,48.753806,0
+                11.160402,48.753606,0
+                11.160391,48.753497,0
+                11.160537,48.753403,0
+                11.161337,48.752975,0
+                11.161526,48.752899,0
+                11.161574,48.752699,0
+                11.161778,48.752178,0
+                11.161617,48.751698,0
+                11.162064,48.750761,0
+                11.163336,48.750115,0
+                11.163491,48.750157,0
+                11.163805,48.749151,0
+                11.163624,48.749103,0
+                11.163525,48.748903,0
+                11.163529,48.748386,0
+                11.163532,48.747939,0
+                11.16355,48.747695,0
+                11.163526,48.747501,0
+                11.164014,48.747403,0
+                11.165431,48.747504,0
+                11.166582,48.747583,0
+                11.166942,48.747831,0
+                11.167638,48.747917,0
+                11.167872,48.747267,0
+                11.16839,48.746262,0
+                11.168348,48.745242,0
+                11.170264,48.745656,0
+                11.170404,48.743825,0
+                11.172254,48.74376,0
+                11.172348,48.745632,0
+                11.1726,48.745629,0
+                11.172783,48.747676,0
+                11.18063,48.747379,0
+                11.180759,48.748953,0
+                11.181726,48.748653,0
+                11.182145,48.74837,0
+                11.182984,48.74731,0
+                11.184257,48.745825,0
+                11.184601,48.745478,0
+                11.186613,48.744064,0
+                11.187637,48.744829,0
+                11.188222,48.74451,0
+                11.189124,48.744325,0
+                11.189844,48.744104,0
+                11.190333,48.743983,0
+                11.19089,48.743926,0
+                11.19142,48.743982,0
+                11.191683,48.743948,0
+                11.192718,48.74391,0
+                11.1936123,48.7439724,0
+                11.193925,48.744028,0
+                11.1941551,48.7440309,0
+                11.1943531,48.7440515,0
+                11.1945787,48.7440272,0
+                11.1948618,48.7439656,0
+                11.1953004,48.743943,0
+                11.1954903,48.7439341,0
+                11.1956802,48.7439324,0
+                11.195912,48.7439288,0
+                11.1959096,48.7441502,0
+                11.1961795,48.7441976,0
+                11.1974686,48.7447472,0
+                11.1969923,48.7448646,0
+                11.1960707,48.7449926,0
+                11.1958048,48.7450081,0
+                11.195305,48.745329,0
+                11.195317,48.745864,0
+                11.198557,48.745847,0
+                11.198705,48.748246,0
+                11.197857,48.748538,0
+                11.198861,48.752185,0
+                11.198807,48.754151,0
+                11.197892,48.754262,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Unterstall Reviergrenze</name>
+      <Placemark>
+        <name>Unterstall Reviergrenze 06.2016</name>
+        <description><![CDATA[Beschreibung: Unterstall Reviergrenze 06.2016<br>type: line]]></description>
+        <styleUrl>#line-F9A825-2550</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value>Unterstall Reviergrenze 06.2016</value>
+          </Data>
+          <Data name="type">
+            <value>line</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            11.243505,48.749053,0
+            11.242936,48.749577,0
+            11.24273,48.749733,0
+            11.242276,48.750079,0
+            11.242507,48.752024,0
+            11.241909,48.752342,0
+            11.241702,48.75248,0
+            11.241397,48.752649,0
+            11.24097,48.752822,0
+            11.240594,48.752945,0
+            11.240069,48.753119,0
+            11.240434,48.753628,0
+            11.238602,48.754297,0
+            11.237828,48.754617,0
+            11.237977,48.754668,0
+            11.235592,48.756325,0
+            11.235588,48.756361,0
+            11.234873,48.756916,0
+            11.233839,48.757723,0
+            11.229853,48.756336,0
+            11.227943,48.757605,0
+            11.228558,48.758333,0
+            11.228612,48.758347,0
+            11.229235,48.758067,0
+            11.230428,48.759226,0
+            11.230546,48.75951,0
+            11.230805,48.759921,0
+            11.233097,48.759883,0
+            11.233102,48.760436,0
+            11.232965,48.760489,0
+            11.232126,48.762493,0
+            11.231941,48.763454,0
+            11.23191,48.764166,0
+            11.23194,48.764843,0
+            11.231932,48.765392,0
+            11.232255,48.766963,0
+            11.232515,48.768292,0
+            11.229832,48.768413,0
+            11.229201,48.7692,0
+            11.228125,48.76926,0
+            11.228017,48.7701,0
+            11.226349,48.77062,0
+            11.225781,48.770854,0
+            11.225446,48.770982,0
+            11.224633,48.771166,0
+            11.22461,48.771804,0
+            11.222706,48.772214,0
+            11.222682,48.774174,0
+            11.221195,48.774429,0
+            11.219708,48.774684,0
+            11.220036,48.775177,0
+            11.22063,48.775806,0
+            11.221181,48.77625,0
+            11.221521,48.776486,0
+            11.221418,48.776537,0
+            11.218095,48.776967,0
+            11.218172,48.777273,0
+            11.21508,48.777459,0
+            11.215142,48.777837,0
+            11.212542,48.777909,0
+            11.212624,48.778782,0
+            11.210505,48.778551,0
+            11.210671,48.78009,0
+            11.206569,48.78053,0
+            11.206719,48.782019,0
+            11.203733,48.781803,0
+            11.202854,48.780558,0
+            11.201889,48.779616,0
+            11.200817,48.778566,0
+            11.198803,48.778588,0
+            11.197935,48.778611,0
+            11.197183,48.778666,0
+            11.19688,48.778669,0
+            11.196545,48.778736,0
+            11.196264,48.778873,0
+            11.195995,48.779035,0
+            11.195893,48.779096,0
+            11.195187,48.779039,0
+            11.195771,48.776741,0
+            11.195745,48.77668,0
+            11.195643,48.776036,0
+            11.195616,48.775405,0
+            11.194473,48.775392,0
+            11.193713,48.775472,0
+            11.192728,48.775418,0
+            11.19199,48.775368,0
+            11.19161,48.775335,0
+            11.191209,48.775288,0
+            11.190611,48.775248,0
+            11.189326,48.775205,0
+            11.18801,48.775189,0
+            11.187374,48.77518,0
+            11.187334,48.775322,0
+            11.186394,48.775342,0
+            11.186228,48.775361,0
+            11.185848,48.775403,0
+            11.185649,48.775451,0
+            11.185491,48.77545,0
+            11.185483,48.775524,0
+            11.185015,48.775523,0
+            11.184914,48.775554,0
+            11.184777,48.775635,0
+            11.183451,48.775238,0
+            11.182978,48.775054,0
+            11.182774,48.774948,0
+            11.182679,48.774716,0
+            11.182849,48.774403,0
+            11.18288,48.774272,0
+            11.182873,48.774222,0
+            11.182855,48.774135,0
+            11.182597,48.773934,0
+            11.182091,48.773882,0
+            11.181684,48.773674,0
+            11.181214,48.773439,0
+            11.180439,48.773053,0
+            11.180104,48.772953,0
+            11.179808,48.772861,0
+            11.179477,48.772736,0
+            11.179115,48.772588,0
+            11.178289,48.772565,0
+            11.177743,48.772178,0
+            11.177069,48.771692,0
+            11.176597,48.771303,0
+            11.176272,48.771037,0
+            11.175829,48.770482,0
+            11.17543,48.769973,0
+            11.174756,48.769395,0
+            11.175475,48.769044,0
+            11.176498,48.768966,0
+            11.17729,48.768898,0
+            11.178097,48.768816,0
+            11.179099,48.769131,0
+            11.179359,48.769109,0
+            11.179625,48.769086,0
+            11.180386,48.768893,0
+            11.181172,48.7687,0
+            11.182126,48.768482,0
+            11.182884,48.768306,0
+            11.18337,48.768183,0
+            11.183575,48.768136,0
+            11.185447,48.767406,0
+            11.187163,48.766967,0
+            11.187234,48.766586,0
+            11.187245,48.766505,0
+            11.187427,48.766208,0
+            11.187563,48.766023,0
+            11.187874,48.765623,0
+            11.187952,48.765518,0
+            11.188304,48.765263,0
+            11.188585,48.765047,0
+            11.188115,48.764273,0
+            11.188014,48.764183,0
+            11.187324,48.763626,0
+            11.188414,48.763367,0
+            11.188487,48.763306,0
+            11.188843,48.76299,0
+            11.18891,48.76293,0
+            11.189054,48.762846,0
+            11.189572,48.762549,0
+            11.189915,48.762186,0
+            11.190079,48.76202,0
+            11.190378,48.761848,0
+            11.190942,48.761522,0
+            11.191293,48.761267,0
+            11.191597,48.761009,0
+            11.191698,48.760909,0
+            11.192525,48.760069,0
+            11.193223,48.759272,0
+            11.193917,48.758293,0
+            11.194445,48.757542,0
+            11.195011,48.757672,0
+            11.196187,48.755686,0
+            11.19645,48.755914,0
+            11.1966137,48.7561168,0
+            11.1968213,48.7560627,0
+            11.197045,48.756281,0
+            11.199605,48.755644,0
+            11.199681,48.755634,0
+            11.202076,48.754915,0
+            11.203387,48.7546,0
+            11.20445,48.754455,0
+            11.206778,48.754264,0
+            11.207004,48.754652,0
+            11.208923,48.75454,0
+            11.209549,48.75449,0
+            11.2111,48.754492,0
+            11.211889,48.754488,0
+            11.212576,48.754448,0
+            11.213623,48.754428,0
+            11.213295,48.754965,0
+            11.216253,48.754545,0
+            11.216671,48.752911,0
+            11.217957,48.753069,0
+            11.218688,48.753178,0
+            11.219134,48.753255,0
+            11.219602,48.753348,0
+            11.219403,48.753792,0
+            11.219262,48.754212,0
+            11.219207,48.754592,0
+            11.220457,48.754755,0
+            11.220697,48.754782,0
+            11.221149,48.754805,0
+            11.221528,48.754697,0
+            11.221531,48.754393,0
+            11.221821,48.754406,0
+            11.22242,48.754388,0
+            11.223056,48.754357,0
+            11.223594,48.754275,0
+            11.223819,48.754246,0
+            11.223785,48.754054,0
+            11.225024,48.753754,0
+            11.225844,48.753477,0
+            11.226203,48.753332,0
+            11.226944,48.753105,0
+            11.227504,48.752944,0
+            11.227342,48.752606,0
+            11.22778,48.752397,0
+            11.228126,48.752231,0
+            11.228254,48.752164,0
+            11.228751,48.752019,0
+            11.229931,48.751669,0
+            11.230901,48.751384,0
+            11.232221,48.750902,0
+            11.232371,48.750842,0
+            11.233674,48.750575,0
+            11.233912,48.749637,0
+            11.235505,48.749975,0
+            11.23633,48.74974,0
+            11.237035,48.749546,0
+            11.23836,48.74916,0
+            11.238465,48.748689,0
+            11.23857,48.748264,0
+            11.238729,48.747978,0
+            11.239302,48.747906,0
+            11.243505,48.749053,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Einrichtungen-2022-05-18--07-23-22.kml</name>
+      <Placemark>
+        <name>An der Lache</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.168296,48.764468,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Brand 1</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.167172,48.760455,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Brand 2</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.161992,48.759894,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Braun Silo</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.188381,48.747548,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Bulldoghänger</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.18595,48.765036,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Dorniger Schlag</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.181299,48.765007,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Eiche</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.158556,48.76809,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Erdbau Hesselohe</name>
+        <description><![CDATA[Beschreibung: Fuchs<br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value>Fuchs</value>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.17777,48.75356,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Friedhofkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.178943,48.767964,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Garage Gietlhausen</name>
+        <description><![CDATA[Beschreibung: Gerätelager<br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value>Gerätelager</value>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.155502,48.761229,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Grüner Weg</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.173594,48.763958,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Hirschmüller</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.160537,48.76568,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Igstetter Kirrung</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.173658,48.769246,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Igstetter Wiese Alt</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.17224,48.76921,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Igstetter Wiese neu</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.170398,48.769812,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Kreideweiher</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.1755,48.762023,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Langer Hieb</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.16551,48.76604,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Maislager</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.175256,48.762654,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Märchenwiese</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.171787,48.759943,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Osterkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.183878,48.760517,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Ottokanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.156299,48.768587,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Panoramakanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.174988,48.759403,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Parkplatz Gietlhausen</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.15434,48.764779,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Suhle</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.163741,48.762481,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Bour Wildkammer Zerwirkraum</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried und Unterstall Reviereinrichtung]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried und Unterstall Reviereinrichtung</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.192079,48.729578,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Durchsichtweg</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried und Unterstall Reviereinrichtung]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried und Unterstall Reviereinrichtung</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.178797,48.764728,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Holzgasse 1</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried und Unterstall Reviereinrichtung]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried und Unterstall Reviereinrichtung</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.198778,48.768426,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Holzgasse 2</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried und Unterstall Reviereinrichtung]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried und Unterstall Reviereinrichtung</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.193692,48.767516,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sperrpfosten Sportheim</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Ried und Unterstall Reviereinrichtung]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Ried und Unterstall Reviereinrichtung</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.224277,48.746395,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Brand 3</name>
+        <description><![CDATA[Beschreibung: Fahrbare<br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value>Fahrbare</value>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.168499,48.76079,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Bulldogkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.232993,48.750727,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Drückjagdbock mit Dach</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.190283,48.774504,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Fuchsbau Eder</name>
+        <description><![CDATA[Beschreibung: Feld Eder<br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value>Feld Eder</value>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.212793,48.754436,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Hornissenkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.201109,48.770326,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Jagdhütte</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.191902,48.763647,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Jagdhüttenkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.192949,48.764005,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Kette Schlafkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.235555,48.754135,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Kläranlage</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.221769,48.754877,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Locherbuck</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.211984,48.773416,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Rohr</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.192486,48.772863,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Schlafkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.241717,48.751906,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Schönblick</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.198141,48.765989,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sperrpfosten Kieswerk</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.23537,48.754111,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Straßenkanzel Attenfeld</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.196002,48.77397,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Straßenkanzel Unterstall</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.194206,48.771201,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sturmkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.230715,48.753368,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>TR_Sturmkanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.231088,48.753118,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Thomas Kanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.18422,48.770418,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Werner Kanzel</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.236443,48.751027,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Wunniholz</name>
+        <description><![CDATA[Beschreibung: <br>Revier: Unterstall]]></description>
+        <styleUrl>#icon-1899-DB4436</styleUrl>
+        <ExtendedData>
+          <Data name="Beschreibung">
+            <value/>
+          </Data>
+          <Data name="Revier">
+            <value>Unterstall</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            11.184668,48.774096,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>
