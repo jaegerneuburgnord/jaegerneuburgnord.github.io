@@ -1,188 +1,69 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<link href="./manifest.json" rel="manifest"/>
-<meta content="#4CAF50" name="theme-color"/>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Wiesen Neuburg Nord</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@4.5.0/dist/togeojson.umd.min.js"></script>
-<link href="./styles.css" rel="stylesheet"/>
-<link href="./sam2-styles.css" rel="stylesheet"/>
-<link href="./icon-192x192.png" rel="icon" type="image/png"/>
-<link href="./icon-192x192.png" rel="apple-touch-icon"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Wiesen-Karte – nicht mehr verfügbar</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .box {
+      max-width: 480px;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 { font-size: 1.3rem; color: #4CAF50; }
+    #status { font-size: 0.85rem; color: #888; margin-top: 1.5rem; }
+  </style>
 </head>
 <body>
-<div id="map"></div>
-<div class="control-panel">
-    <div class="control-header">
-        <span>Wiesen Neuburg Nord</span>
-        <i class="fas fa-chevron-up toggle-icon"></i>
-    </div>
-    <div class="control-content">
-        <!-- Tabs Navigation -->
-        <ul class="tabs-nav">
-            <li class="tab-button active" data-tab="search-tab">Suche</li>
-            <li class="tab-button" data-tab="polygon-tab">Flächen-Tool</li>
-        </ul>
-
-        <!-- Tab Container -->
-        <div class="tab-container">
-            <!-- Suche & Ebenen Tab -->
-            <div id="search-tab" class="tab-content active">
-                <div class="search-container">
-                    <input class="search-input" placeholder="Suche nach Name oder Beschreibung..." type="text"/>
-                    <div class="search-options">
-                        <label>
-                            <input type="checkbox" id="enable-place-search" checked> 
-                            Ortssuche aktivieren
-                        </label>
-                    </div>
-                    <div class="search-results"></div>
-                </div>
-                <div class="button-container">
-                    <button onclick="toggleAllLayers(true)">Alle anzeigen</button>
-                    <button onclick="toggleAllLayers(false)">Alle ausblenden</button>
-                    <!--button id="location-button" onclick="showCurrentLocation()"><i class="fas fa-map-marker-alt"></i> Standort anzeigen</button-->
-                    <button id="location-button" onclick="toggleLocationTracking()">
-                        <i class="fas fa-map-marker-alt"></i> Standort anzeigen
-                      </button>
-                </div>
-
-                <div class="layer-section">
-                    <div class="section-header">
-                        <span>Verfügbare Ebenen</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="layer-items" id="layerCheckboxes"></div>
-                </div>
-            </div>
-
-            <!-- Polygon-Tool Tab -->
-            <div id="polygon-tab" class="tab-content">
-                <div class="polygon-tools">
-                    <div class="polygon-buttons">
-                        <button id="start-polygon" onclick="startPolygonSelection()"><i class="fas fa-draw-polygon"></i> Fläche zeichnen</button>
-                        <button id="start-segment" onclick="startSegmentAnything()"><i class="fas fa-magic"></i> Fläche erkennen</button>
-                        <button id="clear-polygon" onclick="clearPolygonPoints()" disabled><i class="fas fa-trash"></i> Löschen</button>
-                        <button id="export-polygon" onclick="preparePolygonExport()" disabled><i class="fas fa-file-export"></i> Fläche exportieren</button>
-                    </div>
-                    
-                    <div id="sam2-controls" class="sam2-controls" style="display: none;">
-                        <div class="sam2-sensitivity">
-                            <label for="sam2-threshold">Empfindlichkeit:</label>
-                            <input type="range" id="sam2-threshold" min="0" max="100" value="50">
-                            <div class="range-values">
-                                <span>Genauer</span>
-                                <span>Größer</span>
-                            </div>
-                        </div>
-                        <div class="sam2-status">
-                            <span class="sam2-status-indicator"></span>
-                            <span class="sam2-status-text">SAM2 Modell wird geladen...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="polygon-section">
-                        <div class="section-header">
-                            <span>Bestehendes Fläche bearbeiten</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                        <div class="layer-items">
-                            <p>Wählen Sie ein bestehende Fläche zur Bearbeitung aus:</p>
-                            <select id="edit-polygon-select">
-                                <option value="">-- Fläche auswählen --</option>
-                            </select>
-                            <button id="load-polygon" onclick="loadPolygonForEditing()" disabled><i class="fas fa-edit"></i> Fläche laden</button>
-                        </div>
-                    </div>
-                    
-                    <div id="polygon-points">
-                        Keine Punkte ausgewählt
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal für Email -->
-<div id="email-modal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>KMZ per E-Mail versenden</h3>
-        <div>
-            <label for="polygon-name">Name des Polygons:</label>
-            <input type="text" id="polygon-name" placeholder="z.B. Wiese Neuburg" value="Neue Fläche">
-        </div>
-        <div>
-            <label for="polygon-description">Beschreibung:</label>
-            <textarea id="polygon-description" rows="3" placeholder="Beschreibung des Polygons"></textarea>
-        </div>
-        <div>
-            <label>What3Words-Adresse:</label>
-            <div id="w3w-container" style="display: flex; align-items: center; margin-bottom: 10px;">
-                <input type="text" id="w3w-address" readonly style="flex-grow: 1; margin-right: 5px;">
-                <button id="get-w3w" style="flex-shrink: 0;">Ermitteln</button>
-            </div>
-        </div>
-        <div>
-            <label for="email-to">Empfänger E-Mail:</label>
-            <input type="email" id="email-to" placeholder="beispiel@email.com">
-        </div>
-        <div>
-            <label for="email-subject">Betreff:</label>
-            <input type="text" id="email-subject" value="Flächen Export - Wiesen Neuburg Nord">
-        </div>
-        <div>
-            <label for="email-body">Nachricht:</label>
-            <textarea id="email-body" rows="3">Anbei finden Sie die Exportierte Fläche aus der Wiesen Neuburg Nord Karte.</textarea>
-        </div>
-        <div class="modal-buttons">
-            <button id="download-kmz">Herunterladen</button>
-            <button id="cancel-email">Abbrechen</button>
-            <button id="send-email">Senden</button>
-        </div>
-    </div>
-</div>
-
-<!-- SAM2 Model Progress Indicator -->
-<div id="sam2-loading-progress" class="sam2-loading-progress" style="width: 0%; display: none;"></div>
-
-<!-- JavaScript-Dateien einbinden -->
-<script src="./js/utils.js"></script>
-<script src="./js/map-config.js"></script>
-<script src="./js/search.js"></script>
-<script src="./js/location.js"></script>
-<script src="./js/polygon.js"></script>
-<script src="./js/polygon-editor.js"></script>
-<script src="./js/kmz-export.js"></script>
-<script src="./js/tabs.js"></script>
-<script src="./js/main.js"></script>
-<script src="./js/sam2-api.js"></script>
-<script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js');
-}
-</script>
-<!-- ONNX Runtime and TensorFlow.js for AI models -->
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas/dist/html2canvas.min.js"></script>
-
-<!-- Segment Anything Integration -->
-<script src="./js/onnx-utils.js"></script>
-<script src="./js/segment-model-loader.js"></script>
-<script src="./js/segment-model-tester.js"></script>
-<script src="./js/segment-anything.js"></script>
-
-<!-- SAM2 Integration -->
-<script src="./js/sam2-config.js"></script>
-<script src="./js/sam2-integration.js"></script>
-
+  <div class="box">
+    <h1>Wiesen-Karte</h1>
+    <p>Diese Anwendung wurde vom Netz genommen und ist nicht mehr verfügbar.</p>
+    <p id="status">Lokale Daten werden bereinigt&hellip;</p>
+  </div>
+  <script>
+    (async function wipe() {
+      const status = document.getElementById('status');
+      try {
+        // 1. Service Worker deregistrieren
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+        // 2. Cache Storage (Offline-Kopien der App und Kartendaten) löschen
+        if ('caches' in window) {
+          const names = await caches.keys();
+          await Promise.all(names.map(n => caches.delete(n)));
+        }
+        // 3. Web Storage löschen
+        try { localStorage.clear(); } catch (e) {}
+        try { sessionStorage.clear(); } catch (e) {}
+        // 4. IndexedDB löschen (defensiv, auch wenn die App sie nicht nutzt)
+        if ('indexedDB' in window && indexedDB.databases) {
+          const dbs = await indexedDB.databases();
+          await Promise.all(dbs.map(db => new Promise(resolve => {
+            const req = indexedDB.deleteDatabase(db.name);
+            req.onsuccess = req.onerror = req.onblocked = resolve;
+          })));
+        }
+        status.textContent = 'Lokale Daten wurden entfernt.';
+      } catch (e) {
+        status.textContent = 'Bereinigung teilweise fehlgeschlagen: ' + e.message;
+      }
+    })();
+  </script>
 </body>
 </html>
